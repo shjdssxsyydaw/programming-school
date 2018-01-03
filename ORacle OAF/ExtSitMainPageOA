@@ -4,10 +4,11 @@ import oracle.apps.fnd.framework.OAApplicationModule;
 import oracle.apps.fnd.framework.OAException;
 import oracle.apps.fnd.framework.webui.OAPageContext;
 import oracle.apps.fnd.framework.webui.beans.OAWebBean;
-//import oracle.apps.per.selfservice.common.SSHRParams;
-import oracle.apps.per.selfservice.common.webui.SSHRParams;
+import oracle.apps.per.selfservice.common.SSHRParams;
+
+//import oracle.apps.per.selfservice.common.webui.SSHRParams;
 import oracle.apps.per.selfservice.specialinformation.webui.SitMainPageCO;
-import oracle.apps.per.selfservice.workflowservice.server.WFUtility;
+
 
 
 public class ExtSitMainPageCO extends SitMainPageCO {
@@ -60,15 +61,17 @@ public class ExtSitMainPageCO extends SitMainPageCO {
      String str1 = localSSHRParams.getItemType();
      String str2 = localSSHRParams.getItemKey();
      String str3 = localSSHRParams.getActivityId();
+     String str4 = localSSHRParams.getPersonId();
+
              if (pageContext.getParameter("HrNext") != null)
            // if (event !=null)
             {
-
-                throw new OAException("Testing by Faisal Test case: 02 :",OAException.ERROR);
+                throw new OAException("Testing by Faisal Test case: 02 :"+" person id :  "+str4+"-"+str1+"-"+str2+"-"+str3,OAException.ERROR);
             }
 
        super.processFormRequest(pageContext, webBean);
      //The below is termination of processFormRequest
+
          }
 
 
@@ -77,3 +80,5 @@ public class ExtSitMainPageCO extends SitMainPageCO {
 
 
     }
+
+    
