@@ -1,3 +1,0 @@
-Select *
-From Hr_Api_Transactions Hat
-order by hat.CREATION_DATE desc;
