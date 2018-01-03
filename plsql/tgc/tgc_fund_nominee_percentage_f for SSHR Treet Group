@@ -1,0 +1,92 @@
+/* Formatted on 03-Jan-2018 2:23:20 PM (QP5 v5.139.911.3011) */
+create OR REPLACE function tgc_fund_nominee_percentage_f(fl_personid in         varchar2) return number
+
+is
+      --         FUNCTION GLOBAL VARIABLES
+
+
+      fl_flex_num         number not null default 50430;
+      fl_share_percentage number not null default 0;
+      fl_rem_percentage   number not null default 0;
+
+
+
+       --
+      -- FUNCTION FOR GET ALL FUND PERCENTAGE AGAINST PERSON ID THAT IS PENDING FOR APPROVAL AND SAVE IN HR_TRANSACTION_API TABLE
+      --
+
+      function get_pending_fund_percentage(pl_flex_num   in number,
+                                           fil_person_id in varchar2)
+        return number is
+        pl_sum   number not null default 0;
+        pl_value number not null default 0;
+
+        cursor plc_trans is
+          select number_value
+            from hr_api_transactions       hat,
+                 hr_api_transaction_steps  s,
+                 hr_api_transaction_values vv
+           where hat.creator_person_id = fil_person_id
+             and s.transaction_id = hat.transaction_id
+             and s.transaction_step_id = vv.transaction_step_id
+            -- and hat.status = 'Y'
+               -- / Y is pending approval /
+             and hat.transaction_ref_table = 'HR_API_TRANSACTIONS'
+             and vv.name = 'P_ANALYSIS_CRITERIA_ID';
+      begin
+
+        for x in plc_trans loop
+          --  ------------------------------------------------------
+          --     check segmant 6 where share percentage is feeded
+          -- ------------------------------------------------------
+
+          begin
+            select nvl(s.segment6, 0)
+              into pl_value
+              from per_analysis_criteria s
+             where s.id_flex_num = fl_flex_num
+                  --            flex num 50430 is for Employee Special Information
+               and s.analysis_criteria_id = x.number_value;
+          exception
+            when others then
+              pl_value := 0;
+          end;
+
+          --   sum all percentages data that are pending for approval
+          pl_sum := pl_sum + pl_value;
+        end loop;
+
+        return pl_sum;
+
+      end;
+
+
+
+
+
+    begin
+
+
+
+       /*
+     --   BLOCK FOR QUERY ALREADY  APPROVE  PERCENTAGE OF  FOUND NOMEEI
+        */
+
+
+          select nvl(sum(s.segment6), 0) share_perct
+            into fl_share_percentage
+            from per_person_analyses pp, per_analysis_criteria s
+           where 1 = 1
+             and s.id_flex_num = pp.id_flex_num
+             and s.analysis_criteria_id = pp.analysis_criteria_id
+             and s.segment6 is not null
+             and pp.id_flex_num = fl_flex_num
+             and pp.person_id = fl_personid;
+
+          --
+          --  APPROVED PERCENTAGE +  PENDING FOR APPROVAL FUND PERCENTAGE
+          --
+          fl_share_percentage := fl_share_percentage +  get_pending_fund_percentage(fl_flex_num,fl_personid);
+
+              return   fl_share_percentage;
+        end;
