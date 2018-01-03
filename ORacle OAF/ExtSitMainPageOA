@@ -88,9 +88,6 @@ public class ExtSitMainPageCO extends SitMainPageCO {
                         throw new OAException("WEIGHTING PERCENT is greater than 100, You has assgined WEIGHTING PERCENT = "+result,OAException.ERROR);
                     }
 
-                   /* if(result < 100){
-                        throw new OAException("WEIGHTING PERCENT is LESS than 100, You has assgined WEIGHTING PERCENT = "+result,OAException.ERROR);
-                    } */
 
                 }
                 catch(Exception e){
