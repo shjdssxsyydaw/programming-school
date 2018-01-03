@@ -1,0 +1,32 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+
+/**
+ *
+ * Falickfaisal.com
+ */
+public class hello  {
+
+
+
+    public static void main(String[] args) {
+
+
+       // call method using value
+   helloJ(2);
+}
+
+     //method for display message
+
+    public static void helloJ (int c)
+        {
+        System.out.println(c);
+
+        }
+
+
+
+}
