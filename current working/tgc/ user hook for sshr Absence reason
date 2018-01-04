@@ -265,12 +265,10 @@ CREATE OR REPLACE PACKAGE BODY TGC_USERHOOK_PKG AS
       END IF;
 
     EXCEPTION
-      WHEN others THEN
+      WHEN no_data_found THEN
         NULL;
 
     END;
-
-    null;
 
   END TGC_ABS_LEAVE_VALIDATIONS;
 
