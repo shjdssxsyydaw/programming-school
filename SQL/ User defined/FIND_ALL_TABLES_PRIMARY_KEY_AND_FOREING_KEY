@@ -1,0 +1,22 @@
+SELECT ac.table_name,
+        column_name,
+        position,
+        ac.constraint_name,
+        DECODE (constraint_type, 'P', 'Primary Key', 'Foreign Key') key_type,
+        (SELECT distinct ac2.table_name
+           FROM all_constraints ac2
+          WHERE AC2.CONSTRAINT_NAME = AC.R_CONSTRAINT_NAME)
+           fK_to_table
+   FROM all_cons_columns acc, all_constraints ac
+  WHERE     acc.constraint_name = ac.constraint_name
+        AND acc.table_name = ac.table_name
+        AND CONSTRAINT_TYPE IN ('P', 'R')
+        AND ac.table_name IN (
+
+                select  OBJECT_NAME
+                from all_objects  s
+                where S.OBJECT_TYPE='TABLE'
+               AND OWNER NOT IN ('SYS','SYSTEM','MDSYS','ORDSYS','CTXSYS','APPLSYS')
+
+                                           )
+ORDER BY table_name, constraint_type, position;

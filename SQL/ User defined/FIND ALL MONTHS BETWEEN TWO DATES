@@ -1,0 +1,3 @@
+SELECT to_char(ADD_MONTHS(TRUNC(SYSDATE,'yyyy'),rownum),'mon-yyyy')
+FROM all_objects
+WHERE ROWNUM <13
