@@ -1,0 +1,43 @@
+SELECT * FROM dba_waiters;
+--------------------------
+SELECT * FROM dba_blockers;
+---------------
+select * from DBA_DML_LOCKS;
+-------------------
+select * from DBA_LOCK_INTERNAL ;
+-----------------
+select sys_context('USERENV','SID')
+from dual;
+--------------------
+select S.USERNAME, s.sid, s.osuser, t.sql_id, sql_text
+from v$sqltext_with_newlines t,V$SESSION s
+where t.address =s.sql_address
+and t.hash_value = s.sql_hash_value
+--and s.status = 'ACTIVE'
+and s.username <> 'SYSTEM'
+order by s.sid,t.piece;
+
+-------------------
+
+SELECT vh.sid locking_sid,
+ vs.status status,
+ vs.program program_holding,
+ vw.sid waiter_sid,
+ vsw.program program_waiting
+FROM v$lock vh,
+ v$lock vw,
+ v$session vs,
+ v$session vsw
+WHERE     (vh.id1, vh.id2) IN (SELECT id1, id2
+ FROM v$lock
+ WHERE request = 0
+ INTERSECT
+ SELECT id1, id2
+ FROM v$lock
+ WHERE lmode = 0)
+ AND vh.id1 = vw.id1
+ AND vh.id2 = vw.id2
+ AND vh.request = 0
+ AND vw.lmode = 0
+ AND vh.sid = vs.sid
+ AND vw.sid = vsw.sid;

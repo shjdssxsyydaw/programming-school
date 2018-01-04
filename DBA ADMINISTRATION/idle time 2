@@ -1,0 +1,22 @@
+SELECT
+s.sid,s.serial#,s.username
+,s.status
+,substr(s.machine,1,10)
+,s.osuser,s.module
+,to_char(logon_time, 'mm/dd/yy hh24:mi:ss') logon_time
+-- idle time
+-- days separately
+,substr('0'||trunc(last_call_et/86400),-2,2) || ':' ||
+-- hours
+substr('0'||trunc(mod(last_call_et,86400)/3600),-2,2) || ':' ||
+-- minutes
+substr('0'||trunc(mod(mod(last_call_et,86400),3600)/60),-2,2) || ':' ||
+--seconds
+substr('0'||mod(mod(mod(last_call_et,86400),3600),60),-2,2) idle_time
+FROM v$session s, v$process p
+WHERE s.username IS NOT NULL
+-- use outer join to show sniped sessions in
+-- v$session that don't have an OS process
+AND p.addr(+) = s.paddr
+ORDER BY
+idle_time desc;

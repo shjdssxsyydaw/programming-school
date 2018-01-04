@@ -1,0 +1,6 @@
+declare 
+p_string  varchar2(200);
+begin 
+  p_string:='ALTER SYSTEM KILL SESSION '||''''||'8,2231'||'''';
+ execute immediate p_string;
+end; 

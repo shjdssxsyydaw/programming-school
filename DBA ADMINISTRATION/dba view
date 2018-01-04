@@ -1,0 +1,17 @@
+ Oracle has several views for showing lock status, some of which show the username:
+
+    DBA_BLOCKERS - Shows non-waiting sessions holding locks being waited-on
+    DBA_DDL_LOCKS - Shows all DDL locks held or being requested
+    DBA_DML_LOCKS - Shows all DML locks held or being requested
+    DBA_LOCK_INTERNAL - Displays 1 row for every lock or latch held or being requested with the username of who is holding the lock
+    DBA_LOCKS - Shows all locks or latches held or being requested
+    DBA_WAITERS - Shows all sessions waiting on, but not holding waited for locks
+
+The DBA_LOCK_INTERNAL view is best to show locks for a specific user, and you can specify the query in the form:
+SELECT
+NVL(b.username,'SYS') username,
+session_id,lock_type,mode_held,
+mode_requested,lock_id1,lock_id2
+FROM
+sys.dba_lock_internal a,
+sys.v_$session b

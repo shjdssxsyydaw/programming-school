@@ -1,0 +1,8 @@
+SELECT sid, osuser, username, status,
+TO_CHAR(logon_time, 'DAY HH24:MI:SS') LOGON_TIME,
+FLOOR(last_call_et/3600)||':'||
+FLOOR(MOD(last_call_et,3600)/60)||':'||
+MOD(MOD(last_call_et,3600),60) IDLE, program
+FROM v$session
+WHERE username IS NOT NULL
+ORDER BY last_call_et;

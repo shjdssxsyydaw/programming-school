@@ -1,0 +1,95 @@
+SELECT * FROM SYS.USER$ U, sys.resource_group_mapping$ S
+WHERE U.NAME=S.VALUE(+)
+;
+
+
+
+select * 
+from dba_users;
+
+select * 
+from  dba_sys_privs s;
+
+
+select granted_role
+  from dba_role_privs
+ where grantee ='ALPHA'
+ and admin_option='YES';
+ 
+ SELECT
+  *
+FROM
+  USER_SYS_PRIVS;
+
+
+ 
+ 
+ select * from dba_tab_privs s
+--where s.owner='ALPHA'
+
+
+
+
+
+
+/*
+
+DBA_ROLES - Roles in DB
+DBA_ROLE_PRIVS - Roles granted to users and roles
+ROLE_ROLE_PRIVS - Roles which are granted to roles
+ROLE_SYS_PRIVS - System privileges granted to roles
+ROLE_TAB_PRIVS - Table privileges granted to roles
+
+*/
+
+
+
+select distinct s.OBJECT_TYPE --all database objects 
+from all_objects s;
+
+
+
+
+select decode(sa.grantee#,1,'PUBLIC',su.name),spm.name,
+       decode(min(option$),1,'YES','NO')
+from  sys.system_privilege_map spm, sys.sysauth$ sa, sys.user$ su
+where (su.user#=sa.grantee# or sa.grantee#=1)
+  and sa.privilege#=spm.privilege(+)
+  AND SU.NAME IN (
+select granted_role
+  from dba_role_privs
+ where grantee ='ALPHA'
+ and admin_option='YES')
+group by decode(sa.grantee#,1,'PUBLIC',su.name),spm.name
+
+
+
+
+SELECT * FROM dictionary --VIEW;
+
+SELECT * FROM sys.obj$ ro
+
+SELECT * FROM SYS.OBJAUTH$
+
+SELECT * FROM SYS.OBJAUTH$
+
+SELECT * /* ALL SYSTEM PRIVILEGE */
+FROM SYS.SYSTEM_PRIVILEGE_MAP;
+
+SELECT * FROM SYS.ALL_BASE_TABLE_MVIEWS
+
+SELECT * FROM SYS.ACCESS$
+
+
+SELECT * FROM  sys.syn$ 
+
+GRANT CREATE SESSION TO SYSTEM_VIEW
+
+GRANT SYSTEM_VIEW TO ALPHA
+
+
+select *--granted_role
+  from dba_role_privs
+ where grantee ='SYSTEM_VIEW';
+
+

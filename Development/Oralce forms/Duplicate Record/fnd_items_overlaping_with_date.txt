@@ -1,0 +1,60 @@
+PROCEDURE fnd_items_overlaping_with_date IS
+
+--// Procedure Static variables
+		
+		CurrentRecordNumber	Constant Number :=:System.Cursor_Record;
+		CurrentCategoryDesc	Constant varchar2(200) :=:Category_Desc ;
+		CurrentStartDate	Constant Date :=:START_DATE ;
+
+
+--// Procedure Not Null Default variables
+		LastRecordNumber	 Number Not Null Default 0;		
+
+--// Procedure  variables
+
+		errorFlag Char(1) Not Null Default 'F' ;
+
+
+
+BEGIN
+
+	--// Last Record 
+Last_Record;
+LastRecordNumber:=:System.Cursor_Record;
+
+	--// First Record 
+First_Record;
+		
+	--loop first record .. Last record 
+		
+		For X in 1..LastRecordNumber 
+			Loop 
+					--// exit when overlaping found 
+					Exit When errorFlag ='T';
+					--// trunct current record validation 
+					
+					--// if  'A'='A' + '12-dec-2017' between '10-dec-2017' and '13-dec-2017' + Drop Current Record ;
+				IF 		CurrentCategoryDesc=:Category_Desc 
+				And		CurrentStartDate BETWEEN :START_DATE AND :INACTIVE_DATE	
+					--	And CurrentRecordNumber!=:System.Cursor_Record  
+						THEN
+						 errorFlag:='T';
+				End If;	
+				Next_record;
+   	End loop;
+--// if error  found 
+	If 	errorFlag ='T' 		then 
+				--// Go record that have Error 
+				go_Record(CurrentRecordNumber);
+				go_item('START_DATE');
+				--// message
+				fnd_message.debug('Unable to Transaction '||CurrentCategoryDesc ||'is Overlaping Between dates' );	
+				--// Raise Error
+				Raise form_trigger_failure;
+	else
+			go_Record(CurrentRecordNumber);
+			go_item('INACTIVE_DATE');	
+	end if;
+	
+	
+END;

@@ -1,0 +1,462 @@
+comit=commit
+decl=declare
+elseif=elsif
+endif=end if
+endloop=end loop
+except=exception
+exitwhen=exit when
+form=from
+func=function
+fuo=for update of
+lop=loop
+ndf=NO_DATA_FOUND
+nil=null
+nul=null
+pack=package
+proc=procedure
+rae=RAISE_APPLICATION_ERROR
+returns=return
+seelct=select
+sqlc=sqlcode
+sqle=sqlerrm
+teh=the
+tmr=TOO_MANY_ROWS
+wco=where current of
+whenothers=when others
+whil=while
+aaea1=AP_ACCOUNTING_EVENTS_ALL AAEA
+aaha1=AP_AE_HEADERS_ALL AAHA
+aala1=AP_AE_LINES_ALL AALA
+aba1=AP_BATCHES_ALL ABA
+abaa1=AP_BANK_ACCOUNTS_ALL ABAA
+abb1=AP_BANK_BRANCHES ABB
+aca1=AP_CHECKS_ALL ACA
+aca-aipa=ACA.CHECK_ID = AIPA.CHECK_ID
+acra1=AR_CASH_RECEIPTS_ALL ACRA
+acrha1=AR_CASH_RECEIPT_HISTORY_ALL ACRHA
+acrm1=RA_CUST_RECEIPT_METHODS ACRM
+ada1=AR_DISTRIBUTIONS_ALL ADA
+aia1=AP_INVOICES_ALL AIA
+aia-aida=AIA.INVOICE_ID = AIDA.INVOICE_ID
+aia-aipa=AIA.INVOICE_ID = AIPA.INVOICE_ID
+aida1=AP_INVOICE_DISTRIBUTIONS_ALL AIDA
+aipa1=AP_INVOICE_PAYMENTS_ALL AIPA
+apsa1=AR_PAYMENT_SCHEDULES_ALL APSA
+araa1=AR_RECEIVABLE_APPLICATIONS_ALL ARAA
+at1=AP_TERMS AT
+cah1=CST_AE_HEADERS CAH
+cal1=CST_AE_LINES CAL
+cbsmh1=CE_BANK_STMT_MAP_HDR CBSMH
+cbsml1=CE_BANK_STMT_MAP_LINE CBSML
+ccg1=CST_COST_GROUPS CCG
+cpic1=CST_PAC_ITEM_COSTS CPIC
+cpp1=CST_PAC_PERIODS CPP
+csha1=CE_STATEMENT_HEADERS_ALL CSHA
+csl1=CE_STATEMENT_LINES CSL
+faab1=FA_ADDITIONS_B FAAB
+faah1=FA_ASSET_HISTORY FAAH
+faai1=FA_ASSET_INVOICES FAAI
+faat1=FA_ADDITIONS_TL FAAT
+fab1=FA_BOOKS FAB
+fac1=FA_CATEGORIES_B FAC
+facb1=FA_CATEGORY_BOOKS FACB
+facbd1=FA_CATEGORY_BOOK_DEFAULTS FACBD
+fact1=FA_CATEGORIES_TL FACT
+fada1=FA_DISTRIBUTION_ACCOUNTS FADA
+fadd1=FA_DEPRN_DETAIL FADD
+fadh1=FA_DISTRIBUTION_HISTORY FADH
+fadp1=FA_DEPRN_PERIODS FADP
+fal1=FA_LOOKUPS FAL
+falt1=FA_LOOKUP_TYPES FALT
+fin1=FINANCIALS_SYSTEM_PARAMS_ALL FIN
+gb1=GL_BALANCES GB
+gcc1=GL_CODE_COMBINATIONS GCC
+gdb1=GL_DAILY_BALANCES GDB
+gjb1=GL_JE_BATCHES GJB
+gjc1=GL_JE_CATEGORIES GJC
+gjh1=GL_JE_HEADERS GJH
+gjh-gjl=gjh.je_header_id = gjl.je_header_id
+gjl-gjh=gjh.je_header_id = gjl.je_header_id
+gjl1=GL_JE_LINES GJL
+gjs1=GL_JE_SOURCES GJS
+gp1=GL_PERIODS GP
+gsb1=GL_SETS_OF_BOOKS GSB
+gtc1=GL_TRANSACTION_CALENDAR GTC
+gtd1=GL_TRANSACTION_DATES GTD
+mcb1=MTL_CATEGORIES_B MCB
+mic1=MTL_ITEM_CATEGORIES MIC
+mil1=MTL_ITEM_LOCATIONS MIL
+mln1=MTL_LOT_NUMBERS MLN
+mmt1=MTL_MATERIAL_TRANSACTIONS MMT
+mmt-msi=msi.inventory_item_id = mmt.inventory_item_id
+mmt-mtln=mmt.transaction_id = mtln.transaction_id
+mtln-mmt=mmt.transaction_id = mtln.transaction_id
+mmtt1=MTL_MATERIAL_TRANSACTIONS_TEMP MMTT
+mmtt-mtlt=MMTT.TRANSACTION_TEMP_ID = MTLT.TRANSACTION_TEMP_ID
+msi1=MTL_SYSTEM_ITEMS MSI
+mso1=MTL_SALES_ORDERS MSO
+mti1=MTL_TRANSACTIONS_INTERFACE MTI
+mtli1=MTL_TRANSACTION_LOTS_INTERFACE MTLI
+mtln1=MTL_TRANSACTION_LOT_NUMBERS MTLN
+mtlt1=MTL_TRANSACTION_LOTS_TEMP MTLT
+mtt1=MTL_TRANSACTION_TYPES MTT
+ood1=ORG_ORGANIZATION_DEFINITIONS OOD
+ooha1=OE_ORDER_HEADERS_ALL OOHA
+ooha-oola=OOHA.HEADER_ID = OOLA.HEADER_ID
+ooha-ottt=OOHA.ORDER_TYPE_ID = OTTT.TRANSACTION_TYPE_ID
+oola1=OE_ORDER_LINES_ALL OOLA
+ottt1=OE_TRANSACTION_TYPES_TL OTTT
+pa1=PO_AGENTS PA
+paaf1=PER_ALL_ASSIGNMENTS_F PAAF
+pah1=PO_ACTION_HISTORY PAH
+pap1=PER_ALL_POSITIONS PAP
+papf1=PER_ALL_PEOPLE_F PAPF
+pha1=PO_HEADERS_ALL PHA
+pla1=PO_LINES_ALL PLA
+plla1=PO_LINE_LOCATIONS_ALL PLLA
+pra1=PO_RELEASES_ALL PRA
+prda1=PO_REQ_DISTRIBUTIONS_ALL PRDA
+prha1=PO_REQUISITION_HEADERS_ALL PRHA
+prla1=PO_REQUISITION_LINES_ALL PRLA
+pv1=PO_VENDORS PV
+pvsa1=PO_VENDOR_SITES_ALL PVSA
+raa1=RA_ADDRESSES_ALL RAA
+rc1=RA_CUSTOMERS RC
+rcta1=RA_CUSTOMER_TRX_ALL RCTA
+rctla1=ra_customer_trx_lines_all rctla
+rsh1=RCV_SHIPMENT_HEADERS RSH
+rsl1=RCV_SHIPMENT_LINES RSL
+rsua1=RA_SITE_USES_ALL RSUA
+rt1=RCV_TRANSACTIONS RT
+sf=SELECT * FROM
+sfd=SELECT * FROM DUAL
+w=WHERE
+wda1=WSH_DELIVERY_ASSIGNMENTS WDA
+wdd1=WSH_DELIVERY_DETAILS WDD
+wdj1=WIP_DISCRETE_JOBS WDJ
+wdl1=WSH_DELIVERY_LEGS WDL
+wdla1=WSH_DELIVERY_LEG_ACTIVITIES WDLA
+wdld1=WSH_DELIVERY_LEG_DETAILS WDLD
+we1=WIP_ENTITIES WE
+wmt1=WIP_MOVE_TRANSACTIONS WMT
+wnd1=WSH_NEW_DELIVERIES WND
+wo1=WIP_OPERATIONS WO
+wpb1=WIP_PERIOD_BALANCES WPB
+wt1=WIP_TRANSACTIONS WT
+aila1=ap_invoice_lines_all aila
+aia-aila=aia.invoice_id = aila.invoice_id
+aila-msi1=aila.inventory_item_id = msi.inventory_item_id
+pha-pla=pha.po_header_id = pla.po_header_id
+rcta-rctla=rcta.customer_trx_id = rctla.customer_trx_id
+dbo1=dba_objects dbo
+flt1=fnd_lookup_types flt
+flv1=fnd_lookup_values flv
+aba1=AP_BATCHES_ALL ABA
+pha-pv=pha.vendor_id = pv.vendor_id
+pla-msi=pla.item_id = msi.inventory_item_id
+pla-plla=pla.po_line_id = plla.po_line_id
+plla-msi=plla.ship_to_organization_id = msi.organization_id
+rsh-rsl=rsh.shipment_header_id = rsl.shipment_header_id
+rt-pha=rt.po_header_id = pha.po_header_id
+pha-rt=rt.po_header_id = pha.po_header_id
+pla-pha=pha.po_header_id = pla.po_header_id
+plla-pla=pla.po_line_id = plla.po_line_id
+pv-pha=pha.vendor_id = pv.vendor_id
+msi-pla=pla.item_id = msi.inventory_item_id
+msi-plla=plla.ship_to_organization_id = msi.organization_id
+mgp1=mtl_generic_dispositions mgp
+mgp-gcc=mgp.distribution_account = gcc.code_combination_id
+gcc-mgp=mgp.distribution_account = gcc.code_combination_id
+msci1=mtl_secondary_inventories msci
+oap=org_acct_periods oap
+fu1=fnd_user fu
+hou1=hr_organization_units hou
+hoi1=hr_organization_information hoi
+hou-hoi=hou.organization_id = hoi.organization_id
+hoi-hou=hou.organization_id = hoi.organization_id
+app1=ad_applied_patches aap
+ab1=ad_bugs ab
+ffv1=fnd_flex_values ffv
+ffvs1=fnd_flex_value_sets ffvs
+ffvt1=fnd_flex_values_tl ffvt
+ffv-ffvs=ffv.flex_value_set_id = ffvs.flex_value_set_id
+ffvs-ffv=ffv.flex_value_set_id = ffvs.flex_value_set_id
+ffv-ffvt=ffv.flex_value_id = ffvt.flex_value_id
+ffvt-ffv=ffv.flex_value_id = ffvt.flex_value_id
+ffvtb1=fnd_flex_validation_tables ffvtb
+ffvs-ffvtb=ffvs.flex_value_set_id = ffvtb.flex_value_set_id
+ffvtb-ffvs=ffvs.flex_value_set_id = ffvtb.flex_value_set_id
+fr1=fnd_responsibility fr
+frt1=fnd_responsibility_tl frt
+fr-frt=fr.responsibility_id = frt.responsibility_id
+frt-fr=fr.responsibility_id = frt.responsibility_id
+fa1=fnd_application fa
+fr-fa=fr.application_id = fa.application_id
+fa-fr=fr.application_id = fa.application_id
+frt-fa=frt.application_id = fa.application_id
+fa-frt=frt.application_id = fa.application_id
+fat1=fnd_application_tl fat
+fa-fat=fa.application_id = fat.application_id
+fat-fa=fa.application_id = fat.application_id
+fu-fr=fu.user_id = fr.created_by
+fr-fu=fu.user_id = fr.created_by
+fur1=fnd_user_resp_groups_direct fur
+fu-fur=fu.user_id = fur.user_id
+fur-fu=fu.user_id = fur.user_id
+fr-fur=fr.responsibility_id = fur.responsibility_id
+fur-fr=fr.responsibility_id = fur.responsibility_id
+fdf1=fnd_descriptive_flexs fdf
+fdfc1=fnd_descr_flex_contexts fdfc
+fdft1=fnd_descriptive_flexs_tl fdft
+msi.item=msi.segment1||'-'||msi.segment2||'-'||msi.segment3||'-'||msi.segment4||'-'||msi.segment5 item_code
+misi1=mtl_item_sub_inventories misi
+msi-misi=msi.inventory_item_id = misi.inventory_item_id
+misi-msi=msi.inventory_item_id = misi.inventory_item_id
+msi-misi1=msi.organization_id = misi.organization_id
+misi-msi1=msi.organization_id = misi.organization_id
+msl1=mtl_secondary_locators msl
+msi-msl=msi.inventory_item_id = msl.inventory_item_id
+msl-msi=msi.inventory_item_id = msl.inventory_item_id
+msi-msl1=msi.organization_id = msl.organization_id
+msl-msi1=msi.organization_id = msl.organization_id
+msl-mil=msl.secondary_locator = mil.inventory_location_id
+mil-msl=msl.secondary_locator = mil.inventory_location_id
+gcc-mmt=mmt.distribution_account_id = gcc.code_combination_id
+mmt-gcc=mmt.distribution_account_id = gcc.code_combination_id
+msi-mmt=msi.inventory_item_id = mmt.inventory_item_id
+mmt-msi1=msi.organization_id = mmt.organization_id
+msi-mmt1=msi.organization_id = mmt.organization_id
+rt-rsh=rt.shipment_header_id = rsh.shipment_header_id
+rsh-rt=rt.shipment_header_id = rsh.shipment_header_id
+rsl-msi=rsl.item_id = msi.inventory_item_id
+msi-rsl=rsl.item_id = msi.inventory_item_id
+rsl-msi1=rsl.to_organization_id = msi.organization_id
+msi-rsl1=rsl.to_organization_id = msi.organization_id
+rt-rsl=rt.shipment_line_id = rsl.shipment_line_id
+rsl-rt=rt.shipment_line_id = rsl.shipment_line_id
+rsl-rsh=rsh.shipment_header_id = rsl.shipment_header_id
+rt-mmt=rt.transaction_id = mmt.rcv_transaction_id
+mmt-rt=rt.transaction_id = mmt.rcv_transaction_id
+oola-msi=oola.inventory_item_id = msi.inventory_item_id
+msi-oola=oola.inventory_item_id = msi.inventory_item_id
+oola-msi1=oola.ship_from_org_id = msi.organization_id
+msi-oola1=oola.ship_from_org_id = msi.organization_id
+gcc.code=gcc.segment1||'-'||gcc.segment2||'-'||gcc.segment3||'-'||gcc.segment4||'-'||gcc.segment5||'-'||gcc.segment6||'-'||gcc.segment7 account_code
+pla-rsl=pla.po_line_id = rsl.po_line_id 
+rsl-pla=pla.po_line_id = rsl.po_line_id 
+msi.des=msi.description
+mmt.item=mmt.inventory_item_id
+oola-mic=oola.inventory_item_id = mic.inventory_item_id
+mic-oola=oola.inventory_item_id = mic.inventory_item_id
+oola-mic1=oola.ship_from_org_id = mic.organization_id
+mic-oola1=oola.ship_from_org_id = mic.organization_id
+mtln-msi=mtln.inventory_item_id = msi.inventory_item_id
+msi-mtln=mtln.inventory_item_id = msi.inventory_item_id
+mtln-msi1=mtln.organization_id = msi.organization_id
+msi-mtln1=mtln.organization_id = msi.organization_id
+mmt-mtt=mmt.transaction_type_id = mtt.transaction_type_id
+dbo.t=dbo.object_type
+dbo.n=dbo.object_name
+mtst1=mtl_txn_source_types mtst
+mmt-mtst=mmt.transaction_source_type_id = mtst.transaction_source_type_id
+mtst-mmt=mmt.transaction_source_type_id = mtst.transaction_source_type_id
+fm1=fnd_menus fm
+fr-fm=fr.menu_id = fm.menu_id
+fm-fr=fr.menu_id = fm.menu_id
+fmt1=fnd_menus_tl fmt
+fm-fmt=fm.menu_id = fmt.menu_id
+fmt-fm=fm.menu_id = fmt.menu_id
+msi.oi=msi.organization_id
+msi.id=msi.inventory_item_id
+fdsa1=fnd_doc_sequence_assignments fdsa
+fds=fnd_document_sequences fds
+fds-fdsa=fdsa.doc_sequence_id = fds.doc_sequence_id
+fdsa-fds=fdsa.doc_sequence_id = fds.doc_sequence_id
+assa-hou=assa.org_id = hoi.organization_id
+hou-assa=assa.org_id = hoi.organization_id
+assa1=ap_supplier_sites_all assa
+asa1=ap_suppliers asa
+asa-assa=asa.vendor_id = assa.vendor_id
+assa-asa=asa.vendor_id = assa.vendor_id
+mti-mtli=mti.transaction_interface_id = mtli.transaction_interface_id
+mtli-mti=mti.transaction_interface_id = mtli.transaction_interface_id
+msi-mti=mti.inventory_item_id = msi.inventory_item_id
+mti-msi=mti.inventory_item_id = msi.inventory_item_id
+msi-mti1=mti.organization_id = msi.organization_id
+mti-msi1=mti.organization_id = msi.organization_id
+hcsu1=hz_cust_site_uses_all hcsu
+hcas1=hz_cust_acct_sites_all hcas
+hca1=hz_cust_accounts hca
+hp1=hz_parties hp
+hps1=hz_party_sites hps
+rcta-rctla=rcta.customer_trx_id = rctla.customer_trx_id
+rctla-rcta=rcta.customer_trx_id = rctla.customer_trx_id
+rctla-wnd=rctla.interface_line_attribute3 = wnd.delivery_id
+wnd-rctla=rctla.interface_line_attribute3 = wnd.delivery_id
+wnd-wda=wnd.delivery_id = wda.delivery_id
+wda-wnd=wnd.delivery_id = wda.delivery_id
+wdd-wda=wdd.delivery_detail_id = wda.delivery_detail_id
+wda-wdd=wdd.delivery_detail_id = wda.delivery_detail_id
+rcta-ooha=to_char(rcta.ct_reference) = to_char(ooha.order_number)
+ooha-rcta=to_char(rcta.ct_reference) = to_char(ooha.order_number)
+oola-wdd=wdd.source_line_id = oola.line_id
+wdd-oola=wdd.source_line_id = oola.line_id
+wdd-hcsu=wdd.ship_to_site_use_id = hcsu.site_use_id
+hcsu-wdd=wdd.ship_to_site_use_id = hcsu.site_use_id
+hcas-hcsu=hcas.cust_acct_site_id = hcsu.cust_acct_site_id
+hcsu-hcas=hcas.cust_acct_site_id = hcsu.cust_acct_site_id
+hcas-hcsu1=hcas.org_id = hcsu.org_id
+hcsu-hcas1=hcas.org_id = hcsu.org_id
+hca-hcas=hca.cust_account_id = hcas.cust_account_id
+hcas-hca=hca.cust_account_id = hcas.cust_account_id
+hp-hca=hp.party_id = hca.party_id
+hca-hp=hp.party_id = hca.party_id
+hcas-hps=hcas.party_site_id = hps.party_site_id
+hps-hcas=hcas.party_site_id = hps.party_site_id
+df=delete from
+pla.q=pla.quantity po_line_quantity
+pla.up=pla.unit_price po_line_rate
+rt.tt=rt.transaction_type
+rt.td=rt.transaction_date
+rt.q=rt.quantity receipt_quantity
+rsh.rn=rsh.receipt_num
+pha.o=pha.org_id
+rt-plla=rt.organization_id = plla.ship_to_organization_id
+plla-rt=rt.organization_id = plla.ship_to_organization_id
+mmt.pq=mmt.primary_quantity
+mtt.ttn=mtt.transaction_type_name
+mmt.td=mmt.transaction_date
+mmt.ti=mmt.transaction_id
+mmt.tti=mmt.transaction_type_id
+mtt.tti=mtt.transaction_type_id
+mmt.cf=mmt.costed_flag
+mmt.oi=mmt.organization_id
+mtln.ln=mtln.lot_number
+gjh-fu=gjh.created_by = fu.user_id
+fu-gjh=gjh.created_by = fu.user_id
+gjh-gjb=gjb.je_batch_id = gjh.je_batch_id
+gjb-gjh=gjb.je_batch_id = gjh.je_batch_id
+mmt-wdd=mmt.source_line_id = wdd.source_line_id
+wdd-mmt=mmt.source_line_id = wdd.source_line_id
+oola-mmt=oola.line_id = mmt.source_line_id
+mmt-oola=oola.line_id = mmt.source_line_id
+pla.q=pla.quantity po_line_quantity
+rsh.rn=rsh.receipt_num
+rsl.qr=rsl.quantity_received
+pha.s1=pha.segment1 po_number
+msi.a1=msi.attribute1
+msi.a2=msi.attribute2
+msi.a3=msi.attribute3
+msi.a4=msi.attribute4
+msi.a5=msi.attribute5
+msi.a6=msi.attribute6
+msi.a7=msi.attribute7
+msi.a8=msi.attribute8
+msi.a9=msi.attribute9
+msi.a10=msi.attribute10
+msi.a11=msi.attribute11
+msi.a12=msi.attribute12
+msi.a13=msi.attribute13
+msi.a14=msi.attribute14
+msi.a15=msi.attribute15
+msi.a16=msi.attribute16
+msi.a17=msi.attribute17
+msi.a18=msi.attribute18
+msi.a19=msi.attribute19
+msi.a20=msi.attribute20
+mti-oola=mti.source_line_id = oola.line_id
+oola-mti=mti.source_line_id = oola.line_id
+mti.td=mti.transaction_date
+msi.s1=msi.segment1
+msi.s2=msi.segment2
+msi.s3=msi.segment3
+msi.s4=msi.segment4
+msi.s5=msi.segment5
+moqd1=mtl_onhand_quantities_detail moqd
+ppca1=po_position_controls_all ppca
+pcga1=po_control_groups_all pcga
+pcf1=po_control_functions pcf
+pcr1=po_control_rules pcr
+hl1=hr_locations hl
+ppca-pap=ppca.position_id = pap.position_id
+pap-ppca=ppca.position_id = pap.position_id
+ppca-hou=ppca.org_id = hou.organization_id
+hou-ppca=ppca.org_id = hou.organization_id
+ppca-pcga=ppca.control_group_id = pcga.control_group_id
+pcga-ppca=ppca.control_group_id = pcga.control_group_id
+ppca-pcf=ppca.control_function_id = pcf.control_function_id
+pcf=ppca=ppca.control_function_id = pcf.control_function_id
+pcga-pcr=pcga.control_group_id = pcr.control_group_id
+pcr-pcga=pcga.control_group_id = pcr.control_group_id
+pcr-hl=pcr.location_id = hl.location_id (+)
+hl-pcr=pcr.location_id = hl.location_id (+)
+moqd.ii=moqd.inventory_item_id
+moqd-msi=moqd.inventory_item_id = msi.inventory_item_id
+msi-moqd=moqd.inventory_item_id = msi.inventory_item_id
+moqd-msi1=moqd.organization_id = msi.organization_id
+msi-moqd1=moqd.organization_id = msi.organization_id
+moqd.oi=moqd.organization_id
+mr1=mtl_reservations mr
+mr.oi=mr.organization_id
+mr.id=mr.inventory_item_id
+msi.puc=msi.primary_uom_code
+gcc.ccid=gcc.code_combination_id
+plla-hou=plla.ship_to_organization_id = hou.organization_id
+hou-plla=plla.ship_to_organization_id = hou.organization_id
+hou.o=hou.name org
+pv-pvsa=pv.vendor_id = pvsa.vendor_id
+pvsa-pv=pv.vendor_id = pvsa.vendor_id
+pv.vn=pv.vendor_name
+pha-pvsa=pha.vendor_site_id = pvsa.vendor_site_id
+pvsa-pha=pha.vendor_site_id = pvsa.vendor_site_id
+osc1=oe_sales_credits osc
+rsa1=ra_salesreps_all
+jre1=jtf_rs_resource_extns_vl jre
+ooha-ocs=ooha.header_id = osc.header_id
+ocs-ooha=ooha.header_id = osc.header_id
+oola-osc=oola.line_id = osc.line_id
+osc-oola=oola.line_id = osc.line_id
+osc-rsa=osc.salesrep_id = rsa.salesrep_id
+rsa-osc=osc.salesrep_id = rsa.salesrep_id
+rsa-jre=rsa.resource_id = jre.resource_id
+jre-rsa=rsa.resource_id = jre.resource_id
+msi-aila=msi.inventory_item_id = aila.inventory_item_id
+aila-msi=msi.inventory_item_id = aila.inventory_item_id
+aila-rsl=aila.rcv_shipment_line_id = rsl.shipment_line_id
+rsl-aila=aila.rcv_shipment_line_id = rsl.shipment_line_id
+msi-rsl=rsl.item_id = msi.inventory_item_id
+rsl-msi=rsl.item_id = msi.inventory_item_id
+crs1=cst_reconciliation_summary crs
+pda1=po_distributions_all pda
+crs-pda=crs.po_distribution_id = pda.po_distribution_id
+pda-crs=crs.po_distribution_id = pda.po_distribution_id
+pda-pha=pda.po_header_id = pha.po_header_id
+pha-pda=pda.po_header_id = pha.po_header_id
+pda-pla=pda.po_line_id = pla.po_line_id
+pla-pda=pda.po_line_id = pla.po_line_id
+mta1=mtl_transaction_accounts mta
+mmt-mta=mta.transaction_id = mmt.transaction_id
+mta-mmt=mta.transaction_id = mmt.transaction_id
+mta-gcc=mta.reference_account = gcc.code_combination_id
+gcc-mta=mta.reference_account = gcc.code_combination_id
+gjl-gcc=gjl.code_combination_id = gcc.code_combination_id
+gcc-gjl=gjl.code_combination_id = gcc.code_combination_id
+aia-pv=aia.vendor_id = pv.vendor_id
+pv-aia=aia.vendor_id = pv.vendor_id
+aida-aila=aila.invoice_id = aida.invoice_id
+aila-aida=aila.invoice_id = aida.invoice_id
+cwo1=cst_write_offs cwo
+cwod1=cst_write_off_details cwod
+gl_lines=select * from gl_je_headers gjh , gl_je_lines gjl where gjh.je_header_id = gjl.je_header_id
+bom1=bom_bill_of_materials
+wdj1=WIP_DISCRETE_JOBS WDJ
+msi-wdj=msi.INVENTORY_ITEM_ID   =   wdj.PRIMARY_ITEM_ID
+aap1=ad_applied_patches
+mmt-hou=mmt.ORGANIZATION_ID         = hou.ORGANIZATION_ID
+wdj-we=wdj.WIP_ENTITY_ID   =   we.WIP_ENTITY_ID
+msi-86=msi.ORGANIZATION_ID     =   86
+ati1=arhc_temp_inv ati
+TEBH1=TGC_EXP_BTA_HEADER TEBH
+TEBL1=TGC_EXP_BTA_LINES TEBL
+TEBH-TEBL=TEBH.BTA_ID=TEBL.BTA_ID
+TBEI1=TGC_BTA_EMPLOYEE_INFO_V  TBEI
