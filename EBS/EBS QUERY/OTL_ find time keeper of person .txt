@@ -1,0 +1,16 @@
+
+SELECT distinct htg.TK_RESOURCE_ID , htt.CRITERIA_ID,
+(
+select ppf.FULL_NAME 
+from per_people_f ppf
+where sysdate between ppf.EFFECTIVE_START_DATE and ppf.EFFECTIVE_END_DATE 
+and ppf.PERSON_ID=htt.CRITERIA_ID
+)
+FROM hxc_tk_groups htg,hxc_tk_group_queries HTGQ,hxc_tk_group_query_criteria htt
+WHERE 1=1
+AND htg.TK_GROUP_ID=htgq.TK_GROUP_ID
+and htt.TK_GROUP_QUERY_ID=htgq.TK_GROUP_QUERY_ID
+and htg.TK_RESOURCE_ID=62
+;
+
+

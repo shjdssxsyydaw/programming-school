@@ -1,0 +1,25 @@
+SELECT pv.vendor_name "Vendor Name",
+       ai.invoice_num "Invoice Num",
+       ai.invoice_id "Invoice Id",
+       ai.invoice_amount "Invoice amount",
+       ail.line_number "Invoice Line Num",
+       ai2.invoice_id "Prepay Invoice Id",
+       ai2.invoice_num "Prepay Invoice Num",
+       ail.prepay_line_number "Prepay Invoice Line Num",
+       (-1)*(ail.amount - NVL(ail.included_tax_amount,0))
+       "Prepay Amount Applied",
+       NULLIF((-1)*(NVL(ail.total_rec_tax_amount, 0) +      
+       NVL(ail.total_nrec_tax_amount, 0)), 0)
+       "Tax amount Applied"
+FROM   AP_INVOICES_ALL ai,
+       AP_INVOICES_ALL ai2,
+       AP_INVOICE_LINES_ALL ail,
+       AP_SUPPLIERS pv
+WHERE ai.invoice_id                  = ail.invoice_id
+AND   ai2.invoice_id                   = ail.prepay_invoice_id
+AND   ail.amount                       < 0
+AND   NVL(ail.discarded_flag,'N')     <> 'Y'
+AND   ail.line_type_lookup_code        = 'PREPAY'
+AND   ai.vendor_id                     = pv.vendor_id
+AND   ai.invoice_type_lookup_code NOT IN ('PREPAYMENT', 'CREDIT','DEBIT')
+AND   ai.invoice_id                    = '166014';

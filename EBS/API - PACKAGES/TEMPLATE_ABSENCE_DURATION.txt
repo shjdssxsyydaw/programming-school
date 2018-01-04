@@ -1,0 +1,173 @@
+/*
+FORMULA NAME: TEMPLATE_ABSENCE_DURATION
+FORMULA TYPE: Quickpaint
+DESCRIPTION:  Calculates the Employee's Absence
+              Duration in days or hours. The profile
+              'HR: Absence Duration Auto Overwrite'
+              determines if an existing duration value
+              can change automatically or not.
+--
+INPUTS:
+             - days_or_hours: the units of the absence
+             - date_start: the absence start date
+             - date_end: the absence end date
+             - time_start: the absence start time
+             - time_end: the absence end time
+             - ABS_INFORMATION_CATEGORY : Absence information context value.
+             - ABS_INFORMATION1 : Absence Information25 value
+             - ABS_INFORMATION2 : Absence Information26 value
+             - ABS_INFORMATION3 : Absence Information27 value
+             - ABS_INFORMATION4 : Absence Information28 value
+             - ABS_INFORMATION5 : Absence Information29 value
+             - ABS_INFORMATION6 : Absence Information30 value
+
+--
+DBI Required:
+             - asg_start_time :  the assignment start time
+             - asg_end_time: the assignment end time
+             - asg_pos_start_time: the positon start time
+             - asg_pos_end_time: the position end time
+--
+Change History
+01 Sep 99       jmoyano         Created
+10 Oct 01       dcasemor        end_day was being set to
+                                asg_start_time. Also allowed
+                                hours to be defaulted if no
+                                UOM is set and hours have been
+                                entered.
+08 Dec 2009     ghshanka        added new input parameters.
+*/
+/* Main Body of Formula */
+INPUTS ARE days_or_hours(text),
+           date_start (date),
+           date_end (date),
+           time_start (text),
+           time_end (text),
+           ABS_INFORMATION_CATEGORY (text),
+           ABS_INFORMATION1 (text),
+           ABS_INFORMATION2 (text),
+           ABS_INFORMATION3 (text),
+           ABS_INFORMATION4 (text),
+           ABS_INFORMATION5 (text),
+           ABS_INFORMATION6 (text)
+
+/* default values */
+DEFAULT FOR days_or_hours IS 'D'
+DEFAULT FOR time_start IS '09:00'
+DEFAULT FOR time_end IS '17:00'
+DEFAULT FOR date_start IS '0001/01/01 00:00:00' (DATE)
+DEFAULT FOR date_end IS '4712/12/31 00:00:00' (DATE)
+DEFAULT FOR ABS_INFORMATION_CATEGORY IS ' '
+DEFAULT FOR ABS_INFORMATION1 IS ' '
+DEFAULT FOR ABS_INFORMATION2 IS ' '
+DEFAULT FOR ABS_INFORMATION3 IS ' '
+DEFAULT FOR ABS_INFORMATION4 IS ' '
+DEFAULT FOR ABS_INFORMATION5 IS ' '
+DEFAULT FOR ABS_INFORMATION6 IS ' '
+
+/* database items */
+DEFAULT FOR asg_start_time IS '09:00'
+DEFAULT FOR asg_end_time IS '17:00'
+DEFAULT FOR asg_pos_start_time IS '09:00'
+DEFAULT FOR asg_pos_end_time IS '17:00'
+/* local variables */
+error_or_warning = ' '
+invalid_msg = ' '
+duration = '0'
+number_of_days = 0
+first_day_hours = 0
+last_day_hours = 0
+/* Defaults Section */
+/* default values for working day, these are only used if no
+working conditions can be found */
+begin_day = '09:00'
+end_day = '17:00'
+
+IF ((date_start WAS DEFAULTED) or (date_end WAS DEFAULTED)) then
+  duration = '0'
+else
+(
+  number_of_days = days_between(date_end,date_start)
+/* absence in hours */
+  IF days_or_hours = 'H'
+  OR (days_or_hours WAS DEFAULTED
+      AND time_start WAS NOT DEFAULTED
+      AND time_end WAS NOT DEFAULTED) THEN
+  (
+/* look for the assignment values*/
+      If ((asg_start_time WAS NOT DEFAULTED) and
+          (asg_end_time WAS NOT DEFAULTED)) then
+      (
+         begin_day = asg_start_time
+         end_day = asg_end_time
+      )
+      else
+      (
+/* look for the position values */
+        if ((asg_pos_start_time  WAS NOT DEFAULTED) and
+            (asg_pos_end_time WAS NOT DEFAULTED)) then
+        (
+           begin_day = asg_pos_start_time
+           end_day = asg_pos_end_time
+        )
+      )
+/* compute hours per day */
+      hours_per_day =  ((to_num(substr(end_day,1,2))*60 +
+                         to_num(substr(end_day,4,2))) -
+                        (to_num(substr(begin_day,1,2))*60 +
+                         to_num(substr(begin_day,4,2)))) / 60
+/* absence takes place during the same day */
+      IF number_of_days = 0 THEN
+        duration = to_char(((to_num(substr(time_end,1,2))*60 +
+                             to_num(substr(time_end,4,2))) -
+                            (to_num(substr(time_start,1,2))*60 +
+                             to_num(substr(time_start,4,2)))) / 60)
+/* more than one day */
+      ELSE
+        (
+          /* Changes for bug3093970 starts here */
+          first_day_hours =((to_num(substr(end_day,1,2))*60 +
+                              to_num(substr(end_day,4,2))) -
+                              (to_num(substr(time_start,1,2))*60 +
+                               to_num(substr(time_start,4,2))) ) / 60
+
+	  last_day_hours = ((to_num(substr(time_end,1,2))*60 +
+                             to_num(substr(time_end,4,2))) -
+                             (to_num(substr(begin_day,1,2))*60 +
+                             to_num(substr(begin_day,4,2))))/60
+
+
+	 if first_day_hours <=0
+	    OR first_day_hours > hours_per_day
+	    OR last_day_hours <= 0
+	    OR last_day_hours > hours_per_day  THEN
+	 (
+           /* Leave timings are out off standard timings*/
+           /* So use 24 hours rule */
+	   first_day_hours = (24*60 -
+	                      (to_num(substr(time_start,1,2))*60 +
+                               to_num(substr(time_start,4,2))))/60
+
+           last_day_hours  = (to_num(substr(time_end,1,2))*60 +
+                             to_num(substr(time_end,4,2)))/60
+         )
+          duration = to_char(first_day_hours+last_day_hours)
+          duration = to_char(to_num(duration) +
+                (DAYS_BETWEEN(date_end,date_start) - 1)* hours_per_day)
+        )
+        /* Changes for bug3093970 ends here */
+  )
+/* absence in days */
+  ELSE
+  (
+    duration = to_char(DAYS_BETWEEN(date_end,date_start) + 1)
+  )
+/* use of error messages:
+  if to_num(duration) = 0 then
+  (
+    duration = 'FAILED'
+    invalid_msg = 'HR_ABSENCE_CANNOT_BE_ZERO'
+  )
+*/
+)
+return duration, invalid_msg

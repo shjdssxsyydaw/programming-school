@@ -1,0 +1,15 @@
+SELECT SUBSTR(a.OWNER,1,20) ,
+  SUBSTR(a.NAME,1,30)        ,
+  SUBSTR(a.TYPE,1,20)        ,
+  SUBSTR(u.status,1,10) Stat ,
+  u.last_ddl_time            ,
+  SUBSTR(text,1,80) Description
+   FROM dba_source a,
+  dba_objects u
+  WHERE 2         =2
+AND u.object_name = a.name
+AND a.text LIKE '%Header%'
+AND a.type = u.object_type
+AND a.name LIKE 'PA_%API%'
+ORDER BY a.owner,
+  a.name;

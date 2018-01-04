@@ -1,0 +1,15 @@
+SELECT distinct ffs.id_flex_structure_name,
+                psi.id_flex_num,
+                ffs.id_flex_structure_code,
+                psi.business_group_id,
+                psi.MULTIPLE_OCCURRENCES_FLAG multiple_occurences_flag
+  FROM per_special_info_types       psi,
+       fnd_id_flex_structures_vl    ffs,
+       per_special_info_type_usages psitu
+ WHERE ffs.id_flex_code = 'PEA'
+   AND psi.id_flex_num = ffs.id_flex_num
+   AND psi.special_information_type_id = psitu.special_information_type_id
+   AND psitu.special_info_category = 'OTHER'
+   --AND psi.business_group_id = 1
+   AND psi.enabled_flag = 'Y'
+ ORDER BY 1

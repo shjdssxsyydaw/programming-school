@@ -1,0 +1,9 @@
+SELECT ahk.api_hook_id,
+ahk.api_module_id,
+ahk.hook_package,
+ahk.hook_procedure
+FROM hr_api_hooks ahk, hr_api_modules ahm
+WHERE ahm.module_name like ‘%_PERSON_ABSENCE%’
+AND ahm.api_module_type = ‘BP’
+AND ahk.api_hook_type = ‘AP’
+AND ahk.api_module_id = ahm.api_module_id

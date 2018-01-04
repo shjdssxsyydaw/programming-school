@@ -1,0 +1,4 @@
+select distinct lookup_code,meaning from fnd_lookup_values
+where lookup_type='PQH_SS_TRANSACTION_STATUS'
+--and lookup_code='W'
+and language='US'

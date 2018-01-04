@@ -1,0 +1,18 @@
+
+
+SELECT SUM(NVL(TO_NUMBER(pac.segment6),0)) PER_SUM
+FROM
+  per_all_people_f  papf,
+  fnd_id_flex_structures_tl fifs,
+  per_analysis_criteria  pac,
+  per_person_analyses  ppa
+WHERE
+1=1
+  AND TRUNC(SYSDATE) BETWEEN papf.effective_start_date AND papf.effective_end_date
+  AND papf.current_employee_flag         = 'Y'
+  AND fifs.id_flex_num   = pac.id_flex_num
+  AND ppa.id_flex_num   = fifs.id_flex_num
+  AND ppa.analysis_criteria_id  = pac.analysis_criteria_id
+  AND ppa.person_id   = papf.person_id
+  AND papf.employee_number=6711
+  AND PAC.ID_FLEX_NUM=50430

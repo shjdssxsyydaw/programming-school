@@ -1,0 +1,9 @@
+
+SELECT htg.TK_GROUP_NAME
+
+FROM hxc_tk_groups htg,hxc_tk_group_queries HTGQ,hxc_tk_group_query_criteria htt
+WHERE 1=1
+AND htg.TK_GROUP_ID=htgq.TK_GROUP_ID
+and htt.TK_GROUP_QUERY_ID=htgq.TK_GROUP_QUERY_ID
+and htt.CRITERIA_ID=62
+;

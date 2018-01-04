@@ -1,0 +1,36 @@
+CREATE OR REPLACE FUNCTION cust_GET_EMP_LEAVE_APPROVER(p_transaction_id number)
+  RETURN NUMBER AS
+
+  /*
+  Create a Custom Dynamic Approval Group and paste the following line there. No Semicolons.
+  
+  
+  --------------------------------------------------------------------------------
+  This function will return the PERSON_ID of the Time keeper of the Selected
+  Employee for whom the transaction is being performed.
+  Also add an exceptions as required in the code below.
+  This is just a sample that works at a very basic level.
+  */
+
+  l_emp number;
+
+begin
+
+  SELECT distinct htg.TK_RESOURCE_ID
+    INTO l_emp
+    FROM hxc_tk_groups               htg,
+         hxc_tk_group_queries        HTGQ,
+         hxc_tk_group_query_criteria htt
+   WHERE 1 = 1
+     AND htg.TK_GROUP_ID = htgq.TK_GROUP_ID
+     and htt.TK_GROUP_QUERY_ID = htgq.TK_GROUP_QUERY_ID
+     and HTT.CRITERIA_ID =
+         HR_AMEUTIL_SS.get_selected_person_id(p_transaction_id);
+
+  RETURN l_emp;
+
+exception
+  when others then
+    return 0;
+  
+END;

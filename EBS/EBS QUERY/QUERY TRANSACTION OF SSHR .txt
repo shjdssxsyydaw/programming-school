@@ -1,0 +1,21 @@
+SELECT *
+FROM hr_api_transaction_values vv
+where vv.TRANSACTION_STEP_ID in (
+
+SELECT s.TRANSACTION_STEP_ID 
+FROM   hr_api_transaction_steps s
+where 1=1
+and s.TRANSACTION_ID=44019
+/*and s.API_NAME='HR_PROCESS_SIT_SS.PROCESS_API'*/
+);
+
+
+SELECT *
+
+FROM hr_api_transactions hat 
+where hat.CREATOR_PERSON_ID=62
+AND HAT.STATUS='Y'
+/* Y is pending approval */
+and hat.TRANSACTION_REF_TABLE='HR_API_TRANSACTIONS'
+--transaction ref table api for sshr sit
+

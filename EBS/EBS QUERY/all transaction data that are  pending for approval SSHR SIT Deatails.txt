@@ -1,0 +1,42 @@
+
+Declare 
+
+Pl_Sum Number Not Null Default 0;
+Pl_Value Number Not Null Default 0;
+
+Cursor Plc_Trans      Is 
+Select Number_Value
+From Hr_Api_Transactions Hat ,Hr_Api_Transaction_Steps S,Hr_Api_Transaction_Values Vv 
+Where Hat.Creator_Person_Id=62
+And  S.Transaction_Id=Hat.Transaction_Id
+And S.Transaction_Step_Id=Vv.Transaction_Step_Id
+And Hat.Status='Y'
+/* Y is pending approval */
+And Hat.Transaction_Ref_Table='HR_API_TRANSACTIONS'
+And Vv.Name='P_ANALYSIS_CRITERIA_ID';
+
+Begin 
+  
+  For X In Plc_Trans Loop 
+    
+--  ------------------------------------------------------    
+--     check segmant 6 where share percentage is feeded  
+-- ------------------------------------------------------
+
+    begin 
+            SELECT nvl(s.SEGMENT6,0) 
+            into Pl_Value
+            FROM PER_ANALYSIS_CRITERIA S
+            WHERE S.ID_FLEX_NUM=50430
+            AND S.ANALYSIS_CRITERIA_ID=X.Number_Value;
+     end;
+     
+--   sum all percentages data that are pending for approval  
+    Pl_Sum:=Pl_Sum+Pl_Value;
+    
+  End Loop;
+  
+  Dbms_Output.Put_Line (Pl_Sum);
+
+
+End;

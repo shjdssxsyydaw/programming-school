@@ -1,0 +1,26 @@
+SELECT aca.check_number "Document Number",
+         asa.segment1 "Supplier Number",
+         asa.vendor_name "Supplier Name",
+         aca.STATUS_LOOKUP_CODE "Payment Reconcilation Status",
+         aca.CLEARED_AMOUNT "Payment Amount",
+         aca.CURRENCY_CODE "Currency",
+         aca.CLEARED_DATE "Payment Date",
+         aia.invoice_num,
+         aia.invoice_amount,
+         AP_INVOICES_PKG.GET_APPROVAL_STATUS (aia.INVOICE_ID,
+                                              aia.INVOICE_AMOUNT,
+                                              aia.PAYMENT_STATUS_FLAG,
+                                              aia.INVOICE_TYPE_LOOKUP_CODE)
+            "Invoice Acct Status"
+    FROM ap_checks_all aca,
+         ap_invoice_payments_all aipa,
+         ap_invoices_all aia,
+         ap_suppliers asa
+   WHERE     aca.check_id = aipa.check_id
+         AND aipa.invoice_id = aia.invoice_id
+         AND aia.vendor_id = asa.vendor_id
+         AND aipa.ACCRUAL_POSTED_FLAG = 'N'
+         AND POSTED_FLAG = 'N'
+         and  aca.check_number=9709
+       --  AND TRUNC (aca.CLEARED_DATE) BETWEEN '01-JUN-2013' AND '30-JUN-2018'
+ORDER BY check_number;

@@ -1,0 +1,22 @@
+SELECT   DISTINCT ppt.user_person_type person_type, papf.full_name employee_name,
+         papf.employee_number employee_number, pa.address_line1,
+         pa.address_line2, pa.address_line3, pa.town_or_city, pa.postal_code,
+         pa.country,PA.ADDRESS_TYPE
+    FROM per_all_people_f papf,
+         per_all_assignments_f paaf,
+         per_addresses pa,
+         per_person_types_tl ppt
+   WHERE papf.person_id = paaf.person_id
+     AND paaf.primary_flag = 'Y'
+     --AND PAPF.EMPLOYEE_NUMBER = '30987'
+     AND papf.current_employee_flag = 'Y'
+     AND papf.business_group_id = paaf.business_group_id
+     AND paaf.person_id = pa.person_id
+     AND papf.person_type_id = ppt.person_type_id
+     /*AND TRUNC (SYSDATE) BETWEEN pa.date_from
+                             AND NVL (pa.date_to, TRUNC (SYSDATE) + 1)
+     AND TRUNC (SYSDATE) BETWEEN papf.effective_start_date
+                             AND papf.effective_end_date
+     AND TRUNC (SYSDATE) BETWEEN paaf.effective_start_date
+                             AND paaf.effective_end_date*/
+     AND PA.ADDRESS_TYPE='REC'
