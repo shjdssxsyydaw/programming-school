@@ -1,0 +1,277 @@
+CREATE OR REPLACE PACKAGE BODY TGC_USERHOOK_PKG AS
+
+  PROCEDURE TGC_ABS_LEAVE_VALIDATIONS(P_EFFECTIVE_DATE               IN DATE,
+                                      P_PERSON_ID                    IN NUMBER,
+                                      P_BUSINESS_GROUP_ID            IN NUMBER,
+                                      P_ABSENCE_ATTENDANCE_TYPE_ID   IN NUMBER,
+                                      P_ABS_ATTENDANCE_REASON_ID     IN NUMBER,
+                                      P_COMMENTS                     IN LONG,
+                                      P_DATE_NOTIFICATION            IN DATE,
+                                      P_DATE_PROJECTED_START         IN DATE,
+                                      P_TIME_PROJECTED_START         IN VARCHAR2,
+                                      P_DATE_PROJECTED_END           IN DATE,
+                                      P_TIME_PROJECTED_END           IN VARCHAR2,
+                                      P_DATE_START                   IN DATE,
+                                      P_TIME_START                   IN VARCHAR2,
+                                      P_DATE_END                     IN DATE,
+                                      P_TIME_END                     IN VARCHAR2,
+                                      P_ABSENCE_DAYS                 IN NUMBER,
+                                      P_ABSENCE_HOURS                IN NUMBER,
+                                      P_AUTHORISING_PERSON_ID        IN NUMBER,
+                                      P_REPLACEMENT_PERSON_ID        IN NUMBER,
+                                      P_ATTRIBUTE_CATEGORY           IN VARCHAR2,
+                                      P_ATTRIBUTE1                   IN VARCHAR2,
+                                      P_ATTRIBUTE2                   IN VARCHAR2,
+                                      P_ATTRIBUTE3                   IN VARCHAR2,
+                                      P_ATTRIBUTE4                   IN VARCHAR2,
+                                      P_ATTRIBUTE5                   IN VARCHAR2,
+                                      P_ATTRIBUTE6                   IN VARCHAR2,
+                                      P_ATTRIBUTE7                   IN VARCHAR2,
+                                      P_ATTRIBUTE8                   IN VARCHAR2,
+                                      P_ATTRIBUTE9                   IN VARCHAR2,
+                                      P_ATTRIBUTE10                  IN VARCHAR2,
+                                      P_ATTRIBUTE11                  IN VARCHAR2,
+                                      P_ATTRIBUTE12                  IN VARCHAR2,
+                                      P_ATTRIBUTE13                  IN VARCHAR2,
+                                      P_ATTRIBUTE14                  IN VARCHAR2,
+                                      P_ATTRIBUTE15                  IN VARCHAR2,
+                                      P_ATTRIBUTE16                  IN VARCHAR2,
+                                      P_ATTRIBUTE17                  IN VARCHAR2,
+                                      P_ATTRIBUTE18                  IN VARCHAR2,
+                                      P_ATTRIBUTE19                  IN VARCHAR2,
+                                      P_ATTRIBUTE20                  IN VARCHAR2,
+                                      P_PERIOD_OF_INCAPACITY_ID      IN NUMBER,
+                                      P_SSP1_ISSUED                  IN VARCHAR2,
+                                      P_MATERNITY_ID                 IN NUMBER,
+                                      P_SICKNESS_START_DATE          IN DATE,
+                                      P_SICKNESS_END_DATE            IN DATE,
+                                      P_PREGNANCY_RELATED_ILLNESS    IN VARCHAR2,
+                                      P_REASON_FOR_NOTIFICATION_DELA IN VARCHAR2,
+                                      P_ACCEPT_LATE_NOTIFICATION_FLA IN VARCHAR2,
+                                      P_LINKED_ABSENCE_ID            IN NUMBER,
+                                      P_BATCH_ID                     IN NUMBER,
+                                      P_CREATE_ELEMENT_ENTRY         IN BOOLEAN,
+                                      P_ABS_INFORMATION_CATEGORY     IN VARCHAR2,
+                                      P_ABS_INFORMATION1             IN VARCHAR2,
+                                      P_ABS_INFORMATION2             IN VARCHAR2,
+                                      P_ABS_INFORMATION3             IN VARCHAR2,
+                                      P_ABS_INFORMATION4             IN VARCHAR2,
+                                      P_ABS_INFORMATION5             IN VARCHAR2,
+                                      P_ABS_INFORMATION6             IN VARCHAR2,
+                                      P_ABS_INFORMATION7             IN VARCHAR2,
+                                      P_ABS_INFORMATION8             IN VARCHAR2,
+                                      P_ABS_INFORMATION9             IN VARCHAR2,
+                                      P_ABS_INFORMATION10            IN VARCHAR2,
+                                      P_ABS_INFORMATION11            IN VARCHAR2,
+                                      P_ABS_INFORMATION12            IN VARCHAR2,
+                                      P_ABS_INFORMATION13            IN VARCHAR2,
+                                      P_ABS_INFORMATION14            IN VARCHAR2,
+                                      P_ABS_INFORMATION15            IN VARCHAR2,
+                                      P_ABS_INFORMATION16            IN VARCHAR2,
+                                      P_ABS_INFORMATION17            IN VARCHAR2,
+                                      P_ABS_INFORMATION18            IN VARCHAR2,
+                                      P_ABS_INFORMATION19            IN VARCHAR2,
+                                      P_ABS_INFORMATION20            IN VARCHAR2,
+                                      P_ABS_INFORMATION21            IN VARCHAR2,
+                                      P_ABS_INFORMATION22            IN VARCHAR2,
+                                      P_ABS_INFORMATION23            IN VARCHAR2,
+                                      P_ABS_INFORMATION24            IN VARCHAR2,
+                                      P_ABS_INFORMATION25            IN VARCHAR2,
+                                      P_ABS_INFORMATION26            IN VARCHAR2,
+                                      P_ABS_INFORMATION27            IN VARCHAR2,
+                                      P_ABS_INFORMATION28            IN VARCHAR2,
+                                      P_ABS_INFORMATION29            IN VARCHAR2,
+                                      P_ABS_INFORMATION30            IN VARCHAR2,
+                                      P_ABSENCE_CASE_ID              IN NUMBER)
+
+   IS
+
+    L_ABSENCE_START_DATE DATE := NVL(P_DATE_START, P_DATE_PROJECTED_START);
+    L_ABSENCE_END_DATE   DATE := NVL(P_DATE_END, P_DATE_PROJECTED_END);
+
+  BEGIN
+
+    IF P_ABS_ATTENDANCE_REASON_ID in (1061, 1063) AND
+       (L_ABSENCE_END_DATE - L_ABSENCE_START_DATE) + 1 != 6 THEN
+
+      HR_UTILITY.SET_MESSAGE(0, 'TGC_ABS_VALIDATIONS'); -- 'Only Six Alpha Leaves Allowed');
+      HR_UTILITY.RAISE_ERROR;
+
+    END IF;
+
+    /*  == == == == == == == == == == == == == == == == == CASUAL LEAVE CHECK == == == == == == == == == == == == == == == == == -- */
+    IF P_ABSENCE_ATTENDANCE_TYPE_ID IN (2064) AND
+       P_ABS_ATTENDANCE_REASON_ID != 1061 AND
+       (L_ABSENCE_END_DATE - L_ABSENCE_START_DATE) + 1 > 2
+
+     THEN
+
+      HR_UTILITY.SET_MESSAGE(0, 'Only 2 Casual Leaves Allowed');
+      HR_UTILITY.RAISE_ERROR;
+    END IF;
+    /*=================================== short and half leave =========================== */
+
+    IF P_ABSENCE_ATTENDANCE_TYPE_ID IN
+       (4062,
+        4064,
+        4066,
+        1062,
+        2068,
+        2072,
+        2075,
+        2078,
+        2082,
+        2084,
+        2086,
+        6063,
+        6064,
+        6065,
+        7062,
+        2065,
+        2070,
+        2080,
+        2083,
+        2065,
+        6065) THEN
+
+      DECLARE
+
+        L_COUNT NUMBER := 0;
+
+      BEGIN
+
+        SELECT COUNT(*)
+          INTO L_COUNT
+          FROM HXT_DET_HOURS_WORKED_F DHW, PER_ALL_ASSIGNMENTS_F PAAF
+         WHERE 1 = 1
+           AND PAAF.ASSIGNMENT_ID = DHW.ASSIGNMENT_ID
+           AND SYSDATE BETWEEN PAAF.EFFECTIVE_START_DATE AND
+               PAAF.EFFECTIVE_END_DATE
+           AND DHW.DATE_WORKED = L_ABSENCE_START_DATE
+           AND PAAF.PERSON_ID = TO_CHAR(P_PERSON_ID)
+           AND DHW.TIME_IN IS NOT NULL
+           AND DHW.TIME_OUT IS NOT NULL;
+
+        IF L_COUNT = 0 THEN
+          HR_UTILITY.SET_MESSAGE(0, 'TGC_SHT_HALF_LEAVE_SSHR');
+          HR_UTILITY.RAISE_ERROR;
+        END IF;
+
+      end;
+
+    END IF;
+
+    /*=================================MORE THAN TWO CASUAL LEAVES ==============         */
+
+    DECLARE
+      L_SD       DATE := L_ABSENCE_START_DATE;
+      L_ED       DATE := L_ABSENCE_END_DATE;
+      L_CUR_DAYS NUMBER := (L_ED - L_SD) + 1;
+      L_LEV_DAYS NUMBER;
+
+      L_FLAG  VARCHAR2(200);
+      L_COUNT NUMBER := 0;
+
+      CURSOR CL_LEAVE IS
+        SELECT *
+          FROM (SELECT PAA.PERSON_ID,
+                       PAA.ABSENCE_ATTENDANCE_TYPE_ID,
+                       PAA.DATE_START                 LEAVE_START_DATE,
+                       PAA.DATE_END                   LEAVE_END_DATE,
+                       PAA.ABSENCE_DAYS
+                  FROM PER_ABSENCE_ATTENDANCES PAA
+                 WHERE 1 = 1
+                UNION ALL
+                SELECT HAT.CREATOR_PERSON_ID,
+                       TO_NUMBER(HATS.INFORMATION5),
+                       TO_DATE(HATS.INFORMATION1, 'YYYY-MM-DD'),
+                       TO_DATE(HATS.INFORMATION2, 'YYYY-MM-DD'),
+                       TO_NUMBER(HATS.INFORMATION8)
+                  FROM HR_API_TRANSACTIONS      HAT,
+                       HR_API_TRANSACTION_STEPS HATS
+                 WHERE HAT.TRANSACTION_REF_TABLE = 'PER_ABSENCE_ATTENDANCES'
+                   AND HAT.TRANSACTION_GROUP = 'ABSENCE_MGMT'
+                   AND HAT.TRANSACTION_IDENTIFIER = 'ABSENCES'
+                   AND HAT.TRANSACTION_REF_ID IS NOT NULL
+                   AND HAT.STATUS = 'Y'
+                   AND HAT.TRANSACTION_ID = HATS.TRANSACTION_ID) S
+         WHERE 1 = 1
+           AND s.PERSON_ID = P_PERSON_ID
+           AND s.ABSENCE_ATTENDANCE_TYPE_ID = 2064
+         ORDER BY s.LEAVE_START_DATE DESC, s.LEAVE_END_DATE DESC;
+
+    BEGIN
+
+      FOR X IN CL_LEAVE LOOP
+        EXIT WHEN L_FLAG = 'F';
+
+        L_LEV_DAYS := X.LEAVE_END_DATE - X.LEAVE_START_DATE + 1;
+
+        IF L_CUR_DAYS = 1 THEN
+          ---- PAST DATE AND NUMBER OF DAYS TWO
+          IF X.LEAVE_END_DATE = L_SD - 1 AND L_LEV_DAYS = 2 THEN
+            L_FLAG := 'F';
+          END IF;
+          ---- PAST DATE AND NUMBER OF DAYS TWO
+          IF X.LEAVE_START_DATE = L_SD + 1 AND L_LEV_DAYS = 2 THEN
+            L_FLAG := 'F';
+          END IF;
+
+          ----- LEAVE IN PAST TWO DAYS SO
+          IF X.LEAVE_END_DATE IN (L_SD - 1, L_SD - 2) THEN
+            L_COUNT := L_COUNT + 1;
+            IF L_COUNT = 2 THEN
+              L_FLAG := 'F';
+            END IF;
+          END IF;
+
+          --- RESET_VALUE
+          IF L_COUNT != 2 THEN
+            L_COUNT := 0;
+          END IF;
+
+          ----- LEAVE IN FEATURE TWO DAYS SO
+          IF X.LEAVE_START_DATE IN (L_SD + 1, L_SD + 2) THEN
+            L_COUNT := L_COUNT + 1;
+            IF L_COUNT = 2 THEN
+              L_FLAG := 'F';
+            END IF;
+          END IF;
+          ---- PAST DATE AND FEATURE  DAYS AS LEAVE
+          IF X.LEAVE_END_DATE = L_SD - 1 OR X.LEAVE_START_DATE = L_SD + 1 THEN
+
+            L_COUNT := L_COUNT + 1;
+            IF L_COUNT = 2 THEN
+              L_FLAG := 'F';
+            END IF;
+
+          END IF;
+
+          --- USER APPLY FOR TWO LEAVES
+        ELSIF L_CUR_DAYS = 2 THEN
+
+          ---- CURRENT LEAVE FOR 2 DAYS   AND LAST DAY WAS LEAVE OR FEATURE DAY IS LEAVE
+          IF L_SD = X.LEAVE_END_DATE + 1 OR L_ED = X.LEAVE_START_DATE - 1 THEN
+            L_FLAG := 'F';
+          END IF;
+
+        END IF;
+
+      END LOOP;
+
+      IF L_FLAG = 'F' THEN
+        HR_UTILITY.SET_MESSAGE(0, 'Only 2 Casual Leaves Allowed');
+        HR_UTILITY.RAISE_ERROR;
+      END IF;
+
+    EXCEPTION
+      WHEN others THEN
+        NULL;
+
+    END;
+
+    null;
+
+  END TGC_ABS_LEAVE_VALIDATIONS;
+
+END TGC_USERHOOK_PKG;
