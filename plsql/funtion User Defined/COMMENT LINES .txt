@@ -1,0 +1,16 @@
+/*****************************************************************************/
+/*  PROCEDURE   TGC_BTR_DATES_OVERLAPING_P    */
+/*  MODULE:  BTR FORM                         */
+/*  CREATED BY: FALICK FAISAL CRAETE TIME:  LAST UPDATE    */
+/*  TREET GROUP CORRPURATION                  */
+/*****************************************************************************/
+
+
+
+
+/*****************************************************************************/
+/*  FUNCTION   TGC_BTR_DATES_OVERLAPING_P    */
+/*  MODULE:  BTR FORM                         */
+/*  CREATED BY: FALICK FAISAL CRAETE TIME:  LAST UPDATE    */
+/*  TREET GROUP CORRPURATION                  */
+/*****************************************************************************/
