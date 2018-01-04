@@ -1,5 +1,7 @@
 package TreetGroup.oracle.apps.per.selfservice.specialinformation.webui;
 
+import java.io.Serializable;
+
 import java.sql.CallableStatement;
 
 import java.sql.Types;
@@ -13,7 +15,7 @@ import oracle.apps.per.selfservice.common.SSHRParams;
 
 //import oracle.apps.per.selfservice.common.webui.SSHRParams;
 import oracle.apps.per.selfservice.specialinformation.webui.SitMainPageCO;
-
+import oracle.apps.per.selfservice.workflowservice.server.WFUtility;
 
 
 public class ExtSitMainPageCO extends SitMainPageCO {
@@ -35,44 +37,34 @@ public class ExtSitMainPageCO extends SitMainPageCO {
     //Customized Code below
 
      OAApplicationModule localOAApplicationModule = pageContext.getApplicationModule(webBean);
-    /*
 
-      oracle.apps.per.selfservice.common.webui.CommonUtils.activateWarning(pageContext, webBean);
-      oracle.apps.per.common.CommonUtils.setFuncPromptAsPageTitle(pageContext, false, false);
-
-      WFUtility.isTransactionSubmitted(pageContext);
-      if (pageContext.isLoggingEnabled(2))
-      {
-        pageContext.writeDiagnostics(this, "SitMainPageCO: processRequest starting", 2);
-      }
-
-      SSHRParams localSSHRParams = new SSHRParams(localOAApplicationModule.getOADBTransaction());
-
-      OAApplicationModule am = pageContext.getApplicationModule(webBean);
-
-
-
-
-    //           String event = pageContext.getParameter("event");
-    //           throw new OAException( event ,OAException.ERROR);
-
-
-             String event = pageContext.getParameter("event");
-
-             String str1 = localSSHRParams.getPersonId();
-             */
-     // /*
      SSHRParams localSSHRParams = new SSHRParams(localOAApplicationModule.getOADBTransaction());
      String str1 = localSSHRParams.getItemType();
      String str2 = localSSHRParams.getItemKey();
      String str3 = localSSHRParams.getActivityId();
      String str4 = localSSHRParams.getPersonId();
-   //  */
+             Object localObject1;
+           //  String str5 = pageContext.getParameter("_FORM_SUBMIT_BUTTON");
+
+          // event Next Button of SIT Page
              if (pageContext.getParameter("HrNext") != null)
-           // if (event !=null)
+           // if (pageContext.getParameter("_FORM_SUBMIT_BUTTON") != null)
+           // if (pageContext.getParameter("HrSubmit") != null)
+
             {
+                     /*
+                     if (pageContext.isLoggingEnabled(2)) {
+                       pageContext.writeDiagnostics(this, "SitMainCO: Next: " + pageContext.getParameter("HrNext"), 2);
+                     }
+                     */
+                     localObject1 = new Serializable[0];
+                     localOAApplicationModule.invokeMethod("saveTransaction", (Serializable[])localObject1);
+                     pageContext.removeTransactionValue("NewUserRefresh");
+                     WFUtility.wfTransitionActivity(pageContext, str1, str2, str3, "NEXT");
 
                 try{
+
+
                     OADBTransaction txn = localOAApplicationModule.getOADBTransaction();
                     CallableStatement cs = txn.createCallableStatement("BEGIN :1 :=   TGC_FUND_NOMINEE_PERCENTAGE_F(:2);END;",1);
                     int a = Integer.parseInt(str4);
@@ -85,9 +77,10 @@ public class ExtSitMainPageCO extends SitMainPageCO {
                     cs.close();
                 //                         int Openings = Integer.parseInt(NumberOfOpenings);
                     if(result != 100){
-                        throw new OAException("WEIGHTING PERCENT is greater than 100, You has assgined WEIGHTING PERCENT = "+result,OAException.ERROR);
-                    }
+                        throw new OAException("Share Percentage is must be  100% , You has assgined SHARE PERCENT = "+result,OAException.ERROR);
 
+                    }
+                  //  super.processFormRequest(pageContext, webBean);
 
                 }
                 catch(Exception e){
@@ -96,7 +89,7 @@ public class ExtSitMainPageCO extends SitMainPageCO {
                // throw new OAException("Testing by Faisal Test case: 03 :"+" person id :  "+str4+"-"+str1+"-"+str2+"-"+str3,OAException.ERROR);
             }
 
-       super.processFormRequest(pageContext, webBean);
+                super.processFormRequest(pageContext, webBean);
      //The below is termination of processFormRequest
 
          }
