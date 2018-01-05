@@ -1,0 +1,62 @@
+/**
+* @param pageContext -current page context in CO
+* @param evt_name - javascript event will be registered with this name.
+* @param time_in_milli_sec - time in milli sec after which page will refresh
+* e.g if you wanna submit page every 10 sec , enter 10000
+* This api should be used in process request and not process form request.
+*/
+public void attachAutoSubmitPropertyToPage(OAPageContext pageContext,
+String evt_name,
+String time_in_milli_sec)
+{
+OABodyBean bodyBean = (OABodyBean) pageContext.getRootWebBean();
+String javaS =
+"javascript:setTimeout(\"submitForm('DefaultFormName',0,{'" +
+evt_name + "':'Y'});\"," + time_in_milli_sec + ");";
+bodyBean.setOnLoad(javaS);
+}
+
+/**
+* @param pageContext -current page context in CO
+* @param event_name - pass javascript event name that you registered
+* in process request.
+* @return return true/false accordinging whether the event has occured or not.
+* This api call should be there in process form request.
+*/
+public boolean isAutoSubmitEvent(OAPageContext pageContext,
+String event_name)
+{
+boolean b = false;
+String s =
+pageContext.getRenderingContext().getServletRequest().getParameter(event_name);
+if (!((s == null) || ("".equals(s.trim()))))
+{
+if("Y".equals(s))
+{
+b = true;
+pageContext.removeParameter(event_name);
+}
+}
+return b;
+}
+
+Then , in process request add the api call
+
+public void processRequest(OAPageContext pageContext, OAWebBean webBean)
+{
+super.processRequest(pageContext, webBean);
+// see javadocs for parameter description
+//10000 for 10 sec as we are paaing in millsec
+attachAutoSubmitPropertyToPage(pageContext,"XX_EVT","10000");
+}
+
+In process form request... you can catch this event in every 10 sec:
+public void processFormRequest(OAPageContext pageContext,
+OAWebBean webBean)
+{
+super.processFormRequest(pageContext, webBean);
+if(isAutoSubmitEvent(pageContext,"XX_EVT"))
+{
+// YOUR LOGIC TO SAVE THE PAGE CONTENTS.
+//or to refresh the data... etc
+}
