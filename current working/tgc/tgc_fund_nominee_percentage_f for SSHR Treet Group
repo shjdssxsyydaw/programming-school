@@ -1,92 +1,140 @@
-/* Formatted on 03-Jan-2018 2:23:20 PM (QP5 v5.139.911.3011) */
-create OR REPLACE function tgc_fund_nominee_percentage_f(fl_personid in         varchar2) return number
 
-is
-      --         FUNCTION GLOBAL VARIABLES
+Create Or Replace Function Tgc_Fund_Nominee_Percentage_F(Fl_Personid In         Varchar2,Fl_Item_Type In Varchar2, Fl_Item_Key In Varchar2   ) Return Number
 
-
-      fl_flex_num         number not null default 50430;
-      fl_share_percentage number not null default 0;
-      fl_rem_percentage   number not null default 0;
+Is
 
 
 
-       --
-      -- FUNCTION FOR GET ALL FUND PERCENTAGE AGAINST PERSON ID THAT IS PENDING FOR APPROVAL AND SAVE IN HR_TRANSACTION_API TABLE
-      --
+/*
+<>            Function OAF FORM Customization  -Treet Group Of Companies
+-- Date : 04-jan-2018 5:02 Pm
+--By   falick Faisal
+-- Purpose
+        Sum Share Percentage
+            1) APPROVED
+            2) PENDING FOR APPROVAL
+            3) CURRENT TRANSACTION
 
-      function get_pending_fund_percentage(pl_flex_num   in number,
-                                           fil_person_id in varchar2)
-        return number is
-        pl_sum   number not null default 0;
-        pl_value number not null default 0;
+*/
 
-        cursor plc_trans is
-          select number_value
-            from hr_api_transactions       hat,
-                 hr_api_transaction_steps  s,
-                 hr_api_transaction_values vv
-           where hat.creator_person_id = fil_person_id
-             and s.transaction_id = hat.transaction_id
-             and s.transaction_step_id = vv.transaction_step_id
-            -- and hat.status = 'Y'
-               -- / Y is pending approval /
-             and hat.transaction_ref_table = 'HR_API_TRANSACTIONS'
-             and vv.name = 'P_ANALYSIS_CRITERIA_ID';
-      begin
+     --         FUNCTION GLOBAL VARIABLES
 
-        for x in plc_trans loop
-          --  ------------------------------------------------------
-          --     check segmant 6 where share percentage is feeded
-          -- ------------------------------------------------------
-
-          begin
-            select nvl(s.segment6, 0)
-              into pl_value
-              from per_analysis_criteria s
-             where s.id_flex_num = fl_flex_num
-                  --            flex num 50430 is for Employee Special Information
-               and s.analysis_criteria_id = x.number_value;
-          exception
-            when others then
-              pl_value := 0;
-          end;
-
-          --   sum all percentages data that are pending for approval
-          pl_sum := pl_sum + pl_value;
-        end loop;
-
-        return pl_sum;
-
-      end;
+      Fl_Flex_Num         Number Not Null Default 50430;
+      Fl_Transaction_Id Number Not Null Default 0;
+      Global_Share_Percentage   Number Not Null Default 0;
+      Fl_Approved_Percentage Number Not Null Default 0;
+      Fl_Submit_Percentage Number Not Null Default 0;
+      Fl_Current_Percentage Number Not Null Default 0;
 
 
+   Begin
+
+                                                                 /*=========================================     Approved    Share Percentage    =============================  */
+                                           Begin
+                                                        Select Nvl(Sum(S.Segment6), 0)  --// APPROVED PERCENTAGE
+                                                        Into Fl_Approved_Percentage
+                                                        From Per_Person_Analyses Pp, Per_Analysis_Criteria S
+                                                        Where 1 = 1
+                                                        And S.Id_Flex_Num = Pp.Id_Flex_Num
+                                                        And S.Analysis_Criteria_Id = Pp.Analysis_Criteria_Id
+                                                        And S.Segment6 Is Not Null
+                                                        And Pp.Date_To Is  Null
+                                                        And Pp.Id_Flex_Num = Fl_Flex_Num
+                                                        And Pp.Person_Id = Fl_Personid;
+
+                                          End;
+
+
+                                                         /*=========================================     Already Submitted  Share Percentage    =============================  */
+
+
+                                         Begin
+                                                        Select Nvl(Sum(Thv.Actual_Percentage),0) For_Submit
+                                                        Into Fl_Submit_Percentage
+                                                        From Tgc_Hr_Sit_Transactions_V Thv
+
+                                                        Where
+                                                        Exists
+                                                        (
+                                                        Select Hats.Transaction_Step_Id
+                                                        From   Hr_Api_Transactions Hat,
+                                                        Hr_Api_Transaction_Steps Hats
+                                                        Where  1=1
+                                                        And Hat.Transaction_Id=Hats.Transaction_Id
+                                                        And Hat.Status='Y'
+                                                        And Hat.Transaction_Ref_Table='HR_API_TRANSACTIONS'
+                                                        And Hat.Selected_Person_Id=62
+                                                        --// OUTER --INNER QUERY RELATION
+                                                        And Thv.Transaction_Step_Id=Hats.Transaction_Step_Id
+                                                        );
+
+
+                                          End;
+
+                                                         /*=========================================     Review/Current   Share Percentage    =============================  */
+
+                                                                                --// Description
+                                                                                --      //  Current Transaction Block That contain Transations of  SIT Page " Fund Nominee "        Funtion of SSHR
+                                                                                        --
+                                                           Begin
+                                                                              --//GET TRANSACTION ID
+                                                                            Select S.Transaction_Id
+                                                                                Into Fl_Transaction_Id
+                                                                            From   Hr_Api_Transactions S
+                                                                            Where  1=1
+                                                                            And S.Status='W'
+                                                                            And S.Transaction_Ref_Table='HR_API_TRANSACTIONS'
+                                                                            And S.Item_Type =Fl_Item_Type
+                                                                            And S.Item_Key=Fl_Item_Key
+                                                                            And S.Selected_Person_Id=Fl_Personid
+                                                                            Order By S.Creation_Date Desc ;
+
+                                                                                            --//GET TRANSACTION DATA
+                                                                                            <<C_Inner_Block>>
+                                                                                         Begin
+
+                                                                                                    Select Nvl(Sum(Thv.Actual_Percentage),0) Current_Percentage
+                                                                                                    Into Fl_Current_Percentage
+                                                                                                    From Tgc_Hr_Sit_Transactions_V Thv
+
+                                                                                                    Where
+                                                                                                    Exists
+                                                                                                    (
+                                                                                                    Select Hats.Transaction_Step_Id
+                                                                                                    From   Hr_Api_Transactions Hat,
+                                                                                                    Hr_Api_Transaction_Steps Hats
+                                                                                                    Where  1=1
+                                                                                                    And Hat.Transaction_Id=Hats.Transaction_Id
+                                                                                                    And Hat.Transaction_Ref_Table='HR_API_TRANSACTIONS'
+                                                                                                    --// OUTER --INNER QUERY RELATION
+                                                                                                    And Thv.Transaction_Step_Id=Hats.Transaction_Step_Id
+                                                                                                    AND  Hats.Transaction_Id=Fl_Transaction_Id
+                                                                                                    );
+
+                                                                                    End;
+
+
+                                                                                      Exception When No_Data_Found
+                                                                                             Then
+                                                                                                Fl_Current_Percentage:=0;
 
 
 
-    begin
+                                                        End;
 
 
 
-       /*
-     --   BLOCK FOR QUERY ALREADY  APPROVE  PERCENTAGE OF  FOUND NOMEEI
-        */
 
 
-          select nvl(sum(s.segment6), 0) share_perct
-            into fl_share_percentage
-            from per_person_analyses pp, per_analysis_criteria s
-           where 1 = 1
-             and s.id_flex_num = pp.id_flex_num
-             and s.analysis_criteria_id = pp.analysis_criteria_id
-             and s.segment6 is not null
-             and pp.id_flex_num = fl_flex_num
-             and pp.person_id = fl_personid;
 
-          --
-          --  APPROVED PERCENTAGE +  PENDING FOR APPROVAL FUND PERCENTAGE
-          --
-          fl_share_percentage := fl_share_percentage +  get_pending_fund_percentage(fl_flex_num,fl_personid);
 
-              return   fl_share_percentage;
-        end;
+
+
+                            --// APPROVED  + SUBMIT  + CURRENT
+               Global_Share_Percentage:=Fl_Approved_Percentage + Fl_Submit_Percentage  + Fl_Current_Percentage;
+
+
+
+              Return  Global_Share_Percentage ;
+
+        End;
