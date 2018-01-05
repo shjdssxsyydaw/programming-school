@@ -57,21 +57,25 @@ public class ExtSitMainPageCO extends SitMainPageCO {
                        pageContext.writeDiagnostics(this, "SitMainCO: Next: " + pageContext.getParameter("HrNext"), 2);
                      }
                      */
+/*
+04-Jan-2017 3:13 commented
                      localObject1 = new Serializable[0];
                      localOAApplicationModule.invokeMethod("saveTransaction", (Serializable[])localObject1);
                      pageContext.removeTransactionValue("NewUserRefresh");
                      WFUtility.wfTransitionActivity(pageContext, str1, str2, str3, "NEXT");
 
+*/
                 try{
 
 
                     OADBTransaction txn = localOAApplicationModule.getOADBTransaction();
-                    CallableStatement cs = txn.createCallableStatement("BEGIN :1 :=   TGC_FUND_NOMINEE_PERCENTAGE_F(:2);END;",1);
+                    CallableStatement cs = txn.createCallableStatement("BEGIN :1 :=   TGC_FUND_NOMINEE_PERCENTAGE_F(:2,:3,:4);END;",1);
                     int a = Integer.parseInt(str4);
+                    cs.setString(3,str1);
+                    cs.setString(4,str2);
                    // int c = Integer.parseInt(str4);
                     cs.registerOutParameter(1,Types.NUMERIC);
                     cs.setInt(2,a);
-                   // cs.setInt(3,c);
                     cs.execute();
                     int result = cs.getInt(1);
                     cs.close();
