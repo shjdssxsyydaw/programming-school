@@ -1,0 +1,19 @@
+# Oracle EBS SQL Query which will take an employees person_id (on line 8),
+# and run a query to the organizational hierarchy for that employee.
+# Output: Employee1 Name -> Employee1 Manager Name -> Director of Whatever Name -> CEO Name
+
+SELECT lpad('->',8*(level-1)) ||
+(
+select distinct full_name from per_all_people_f
+where person_id = paf.person_id
+and sysdate between effective_start_date and effective_end_date
+) TREE
+FROM per_all_assignments_f paf
+START WITH paf.person_id = <PUT_IN_PERSON_ID>
+AND paf.primary_flag = 'Y'
+AND SYSDATE BETWEEN paf.effective_start_date AND
+paf.effective_end_date
+CONNECT BY paf.person_id = PRIOR paf.supervisor_id
+AND paf.primary_flag = 'Y'
+AND SYSDATE BETWEEN paf.effective_start_date AND
+paf.effective_end_date 

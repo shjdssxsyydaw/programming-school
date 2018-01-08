@@ -1,0 +1,97 @@
+CREATE OR REPLACE FUNCTION TGC_BTR_PREPAYMENTS_F(FIL_INVOICE_ID IN VARCHAR2)
+  RETURN VARCHAR2 IS
+
+  FL_BTA_ID NUMBER;
+
+  /*
+  FUNCTION FOR CHECK PRE-PAYMENT APPLIED OR NOT
+    */
+
+  FUNCTION CHECK_PRE_PAYMENT(FIL_INVOICE_ID IN VARCHAR2) RETURN NUMBER IS
+    FL_PRE_amount number;
+  BEGIN
+
+    SELECT ail.AMOUNT
+      INTO FL_PRE_amount
+      FROM AP_INVOICE_LINES_ALL ail
+     WHERE AIL.INVOICE_ID = FIL_INVOICE_ID
+       AND prepay_invoice_id IS NOT NULL
+       AND AIL.DISCARDED_FLAG = 'N';
+    RETURN FL_PRE_amount;
+  exception
+    when others then
+      return 0;
+
+  END;
+
+  /*
+
+  FUNCTION FOR CHECK AMOUNT OF BTA PRE PAYMENT
+
+
+  */
+
+  FUNCTION CHECK_PRE_PAYMNET_AMOUNT(FIL_BTA_ID IN NUMBER) RETURN NUMBER IS
+    FL_AMOUNT NUMBER;
+
+  BEGIN
+
+    SELECT nvl(AIPA.AMOUNT, 0)
+      INTO FL_AMOUNT
+      FROM AP_INVOICES_ALL         S,
+           tgc_exp_bta_header      TBA,
+           ap_invoice_payments_all AIPA
+     WHERE UPPER(S.ATTRIBUTE_CATEGORY) = UPPER('IMPREST INFORMATION')
+       and APPS.Ap_Invoices_Pkg.GET_APPROVAL_STATUS(s.INVOICE_ID,
+                                                    s.INVOICE_AMOUNT,
+                                                    s.PAYMENT_STATUS_FLAG,
+                                                    s.INVOICE_TYPE_LOOKUP_CODE) !=
+           'CANCELLED'
+       And to_char(tba.bta_no) = s.ATTRIBUTE7
+       and to_char(tba.operating_unit) = S.ORG_ID
+       AND S.INVOICE_ID = AIPA.INVOICE_ID
+       AND TBA.BTA_ID = FIL_BTA_ID;
+
+    RETURN FL_AMOUNT;
+
+  EXCEPTION
+    WHEN OTHERS THEN
+      RETURN 0;
+
+  END;
+
+  /*
+  ========================================================================================================
+  */
+
+BEGIN
+
+  SELECT TEBH.BTA_ID
+    INTO FL_BTA_ID
+    from ap_invoices_all aia, TGC_EXP_BTR_HEADER TEBH
+   where 1 = 1
+     and AIA.INVOICE_ID = FIL_INVOICE_ID
+     and aia.ATTRIBUTE_CATEGORY = 'Imprest Information'
+     AND TEBH.BTR_NO = AIA.ATTRIBUTE9
+     AND TEBH.OPERATING_UNIT = AIA.ORG_ID;
+
+  /*
+   IF CHECK_PRE_PAYMNET_AMOUNT(FL_BTA_ID) > 0 AND CHECK_PRE_PAYMENT(FIL_INVOICE_ID)=0 THEN
+       IF BTA PRE-PAYMENT AMOUNT IS GREATER THAN ZERO,
+         AND USER DONT APPLY BTA PRE PAYMNET ON BTR PAYMENT
+         THEN SYSTEM
+         WILL GENRATE ERROR
+  */
+
+  IF CHECK_PRE_PAYMNET_AMOUNT(FL_BTA_ID) !=
+     CHECK_PRE_PAYMENT(FIL_INVOICE_ID) THEN
+    RETURN 'FALSE';
+  ELSE
+    RETURN 'TRUE';
+  END IF;
+
+EXCEPTION
+  WHEN NO_DATA_FOUND THEN
+    RETURN 'TRUE';
+
+END;
