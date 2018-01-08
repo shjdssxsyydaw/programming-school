@@ -1,0 +1,8 @@
+declare
+   type array_t is varray(3) of varchar2(10);
+   array array_t := array_t('Matt', 'Joanne', 'Robert');
+begin
+   for i in 1..array.count loop
+       dbms_output.put_line(array(i));
+   end loop;
+end;
