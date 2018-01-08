@@ -1,0 +1,77 @@
+CREATE OR REPLACE FUNCTION GET_LEAVE_SUPERVISOR_F(CUR_USER_ID IN VARCHAR2)
+  RETURN VARCHAR2 IS
+
+  CUR_PERSON_ID  VARCHAR2(200);
+  SUP_PERSON_ID  VARCHAR2(200);
+  LEAVE_APPROVAL VARCHAR2(200);
+  COUNT_LEVEL    NUMBER NOT NULL DEFAULT 0;
+
+  --// function that will return supervisor id and leave approval
+
+  FUNCTION GET_SUPERVISOR_ID(FIL_PERSOR_ID      IN VARCHAR2,
+                             FOL_LEAVE_APPROVAL OUT VARCHAR2) RETURN VARCHAR2 IS
+    FL_SUP_ID VARCHAR2(200);
+
+  BEGIN
+
+    SELECT PAAF.SUPERVISOR_ID,
+           (select nvl(paaf1.ASS_ATTRIBUTE16, 'N')
+              from PER_ALL_ASSIGNMENTS_F paaf1
+             where SYSDATE BETWEEN pAAF1.effective_start_date AND
+                   pAAF1.effective_end_date
+               and paaf1.PERSON_ID = PAAF.SUPERVISOR_ID) lv_app
+      INTO FL_SUP_ID, FOL_LEAVE_APPROVAL
+      FROM per_all_people_f per, PER_ALL_ASSIGNMENTS_F PAAF
+     WHERE 1 = 1
+       AND PAAF.PERSON_ID = PER.PERSON_ID
+       AND SYSDATE BETWEEN per.effective_start_date AND
+           per.effective_end_date
+       AND SYSDATE BETWEEN pAAF.effective_start_date AND
+           pAAF.effective_end_date
+       AND PER.PERSON_ID = FIL_PERSOR_ID;
+
+    if FL_SUP_ID is not null then
+    RETURN FL_SUP_ID;
+    else
+      FOL_LEAVE_APPROVAL := 'F';
+      RETURN NULL;
+    end if;
+
+  EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+      FOL_LEAVE_APPROVAL := 'F';
+      RETURN NULL;
+
+  END;
+
+BEGIN
+
+  --// GET CURRENT USER PERSON ID
+  BEGIN
+    SELECT FU.EMPLOYEE_ID
+      INTO CUR_PERSON_ID
+      FROM fnd_user fu
+     WHERE FU.USER_ID = CUR_USER_ID;
+  END;
+
+  --//FIND SUPERVISOR THAT HAVE LEAVE APPROVAL
+  LOOP
+
+  EXIT WHEN LEAVE_APPROVAL IN('Y', 'F');
+
+    IF COUNT_LEVEL = 0 THEN
+      SUP_PERSON_ID := GET_SUPERVISOR_ID(CUR_PERSON_ID, LEAVE_APPROVAL);
+    ELSE
+      SUP_PERSON_ID := GET_SUPERVISOR_ID(SUP_PERSON_ID, LEAVE_APPROVAL);
+    END IF;
+
+   /* COUNT_LEVEL := COUNT_LEVEL + 1;
+    DBMS_OUTPUT.PUT_LINE(SUP_PERSON_ID || ' Level: ' || COUNT_LEVEL ||
+                         ' App: ' || LEAVE_APPROVAL);*/
+
+
+  END LOOP;
+
+  RETURN SUP_PERSON_ID;
+
+END;
