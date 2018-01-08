@@ -1,0 +1,41 @@
+Create / Export to Excel in Oracle Forms
+Create the below procedure in the Program Units & call this procedure (from a button) where you need.
+
+=================================================
+
+PROCEDURE GEN_EXCEL IS
+
+IN_FILE TEXT_IO.FILE_TYPE;
+VC_HEAD Varchar2(32000);
+vc_file_path Varchar2(50) := :;
+
+
+BEGIN
+
+IN_FILE := TEXT_IO.FOPEN(vc_file_path||'file_name'||'.CSV','W');
+TEXT_IO.PUT_LINE(IN_FILE,'YOUR_TITLE'||chr(10));
+VC_HEAD := 'header1,header2,header3,..........';
+
+TEXT_IO.PUT_LINE(IN_FILE,VC_HEAD);
+FOR C1 IN ( SELECT cloumn1,
+cloumn2,
+cloumn3,
+------
+------
+FROM table_name) LOOP
+
+TEXT_IO.PUT_LINE(IN_FILE,C1.cloumn1||','||C1.cloumn2||','||C1.cloumn3||','||..........);
+
+
+END LOOP;
+
+TEXT_IO.FCLOSE(IN_FILE);
+MSG_ALERT('Excel file has been created!','I',FALSE);
+EXCEPTION
+WHEN Others THEN
+TEXT_IO.FCLOSE(IN_FILE);
+MSG_ALERT('Error while writing file.'||sqlerrm,'I',FALSE);
+END;
+END;
+
+===================================================
