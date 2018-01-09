@@ -1,0 +1,44 @@
+CREATE OR REPLACE FUNCTION TGC_GET_LOCATION_VALIDATION_F(p_transaction_id IN VARCHAR2)
+  RETURN VARCHAR2 IS
+
+  CUR_PERSON_ID      VARCHAR2(200);
+  FL_LOCATION_ID     NUMBER;
+  FL_ORGANIZATION_ID NUMBER;
+
+BEGIN
+
+  --// Get person id  of Current Transaction
+  begin
+    select s.SELECTED_PERSON_ID
+      into CUR_PERSON_ID
+      from hr_api_transactions s
+     where s.TRANSACTION_ID = p_transaction_id;
+  end;
+
+  SELECT HLV.location_id, PAAF.ORGANIZATION_ID
+    INTO FL_LOCATION_ID, FL_ORGANIZATION_ID
+    FROM per_all_people_f      per,
+         PER_ALL_ASSIGNMENTS_F PAAF,
+         HR_LOCATIONS_V        HLV
+   WHERE 1 = 1
+     AND PAAF.PERSON_ID = PER.PERSON_ID
+     AND SYSDATE BETWEEN per.effective_start_date AND
+         per.effective_end_date
+     AND SYSDATE BETWEEN pAAF.effective_start_date AND
+         pAAF.effective_end_date
+     AND PAAF.LOCATION_ID = HLV.LOCATION_ID
+     AND PER.PERSON_ID = CUR_PERSON_ID;
+
+  --// 194 IS LOCATION ID OF TREET-LAHORE
+  IF FL_LOCATION_ID = 194 THEN
+    RETURN 1;
+  ELSE
+    RETURN 0;
+  END IF;
+
+EXCEPTION
+  WHEN OTHERS THEN
+    NULL;
+    RETURN NULL;
+
+END;
