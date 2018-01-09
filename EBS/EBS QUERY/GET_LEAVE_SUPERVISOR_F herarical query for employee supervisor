@@ -1,7 +1,7 @@
 CREATE OR REPLACE FUNCTION GET_LEAVE_SUPERVISOR_F(p_transaction_id IN VARCHAR2)
   RETURN VARCHAR2 IS
 
-  CUR_PERSON_ID  VARCHAR2(200) := HR_AMEUTIL_SS.get_selected_person_id(p_transaction_id);
+  CUR_PERSON_ID  VARCHAR2(200);
   SUP_PERSON_ID  VARCHAR2(200);
   LEAVE_APPROVAL VARCHAR2(200);
   COUNT_LEVEL    NUMBER NOT NULL DEFAULT 0;
@@ -14,12 +14,7 @@ CREATE OR REPLACE FUNCTION GET_LEAVE_SUPERVISOR_F(p_transaction_id IN VARCHAR2)
 
   BEGIN
 
-    SELECT PAAF.SUPERVISOR_ID,
-           (select nvl(paaf1.ASS_ATTRIBUTE16, 'N')
-              from PER_ALL_ASSIGNMENTS_F paaf1
-             where SYSDATE BETWEEN pAAF1.effective_start_date AND
-                   pAAF1.effective_end_date
-               and paaf1.PERSON_ID = PAAF.SUPERVISOR_ID) lv_app
+    SELECT DISTINCT PAAF.SUPERVISOR_ID, nvl(paaf.ASS_ATTRIBUTE16, 'N')
       INTO FL_SUP_ID, FOL_LEAVE_APPROVAL
       FROM per_all_people_f per, PER_ALL_ASSIGNMENTS_F PAAF
      WHERE 1 = 1
@@ -29,40 +24,48 @@ CREATE OR REPLACE FUNCTION GET_LEAVE_SUPERVISOR_F(p_transaction_id IN VARCHAR2)
        AND SYSDATE BETWEEN pAAF.effective_start_date AND
            pAAF.effective_end_date
        AND PER.PERSON_ID = FIL_PERSOR_ID;
-
-    if FL_SUP_ID is not null then
-      RETURN FL_SUP_ID;
-    else
+    --// IF SUPERVISOR HAVE LEAVE APPROVAL RIGHTS THEN
+    IF FOL_LEAVE_APPROVAL = 'Y' THEN
+      RETURN FIL_PERSOR_ID;
+      --// IF SUPPEVISOR NOT FOUND THEN RETURN NULL
+    ELSIF FL_SUP_ID is NULL THEN
       FOL_LEAVE_APPROVAL := 'F';
       RETURN NULL;
-    end if;
+    ELSE
+      -- IF SUPERVISOR IS FOUND AND NOT HAVE APPROVAL RIGHTS
+      RETURN FL_SUP_ID;
+    END IF;
 
   EXCEPTION
-    WHEN NO_DATA_FOUND THEN
+    WHEN OTHERS THEN
       FOL_LEAVE_APPROVAL := 'F';
       RETURN NULL;
-
   END;
 
 BEGIN
 
-  --//FIND SUPERVISOR THAT HAVE LEAVE APPROVAL
-  LOOP
+  --// Get person id  of Current Transaction
+  begin
+    select s.SELECTED_PERSON_ID
+      into CUR_PERSON_ID
+      from hr_api_transactions s
+     where s.TRANSACTION_ID = p_transaction_id;
+  end;
 
-    EXIT WHEN LEAVE_APPROVAL IN('Y', 'F');
+  SUP_PERSON_ID := GET_SUPERVISOR_ID(CUR_PERSON_ID, LEAVE_APPROVAL);
 
-    IF COUNT_LEVEL = 0 THEN
-      SUP_PERSON_ID := GET_SUPERVISOR_ID(CUR_PERSON_ID, LEAVE_APPROVAL);
-    ELSE
+  IF LEAVE_APPROVAL = 'N' THEN
+    --//FIND SUPERVISOR THAT HAVE LEAVE APPROVAL
+    LOOP
+      EXIT WHEN LEAVE_APPROVAL IN('Y', 'F');
       SUP_PERSON_ID := GET_SUPERVISOR_ID(SUP_PERSON_ID, LEAVE_APPROVAL);
-    END IF;
+      COUNT_LEVEL   := COUNT_LEVEL + 1;
 
-    /* COUNT_LEVEL := COUNT_LEVEL + 1;
-    DBMS_OUTPUT.PUT_LINE(SUP_PERSON_ID || ' Level: ' || COUNT_LEVEL ||
-                         ' App: ' || LEAVE_APPROVAL);*/
+      DBMS_OUTPUT.PUT_LINE(SUP_PERSON_ID || ' Level: ' || COUNT_LEVEL ||
+                           ' App: ' || LEAVE_APPROVAL);
 
-  END LOOP;
-
+    END LOOP;
+  END IF;
   RETURN SUP_PERSON_ID;
 
 END;
