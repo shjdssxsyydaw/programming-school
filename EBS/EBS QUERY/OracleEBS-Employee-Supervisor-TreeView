@@ -16,4 +16,4 @@ paf.effective_end_date
 CONNECT BY paf.person_id = PRIOR paf.supervisor_id
 AND paf.primary_flag = 'Y'
 AND SYSDATE BETWEEN paf.effective_start_date AND
-paf.effective_end_date 
+paf.effective_end_date

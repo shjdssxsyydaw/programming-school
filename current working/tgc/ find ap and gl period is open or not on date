@@ -1,0 +1,18 @@
+select DECODE(ps.closing_status,
+              'O',
+              'O - Open',
+              'N',
+              'Never Opened',
+              'F',
+              'Future Enterable',
+              'C',
+              'Closed',
+              'Unknown'),
+       PS.*
+  FROM GL_PERIOD_STATUSES PS
+ where ps.SET_OF_BOOKS_ID in
+       (select distinct s.SET_OF_BOOKS_ID
+          from ORG_ORGANIZATION_DEFINITIONS s
+         where s.OPERATING_UNIT = 85)
+   and ps.closing_status = 'O'
+   and ps.APPLICATION_ID = 200
