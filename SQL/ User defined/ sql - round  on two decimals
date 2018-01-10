@@ -1,0 +1,1 @@
+select to_char(round(0,2),'0.00') from dual;
