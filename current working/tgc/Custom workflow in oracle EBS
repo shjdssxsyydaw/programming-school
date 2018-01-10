@@ -1,0 +1,1035 @@
+CREATE OR REPLACE PACKAGE BODY APPS.cust_poc_proc
+IS
+   PROCEDURE run_cust_wf (inq_id IN NUMBER)
+   IS
+      itemtype       VARCHAR2 (100)  := 'CUSTAPPR';
+      itemkey        VARCHAR2 (100)
+                               := inq_id || '_' || cust_appr_workflow.NEXTVAL;
+      wfprocess      VARCHAR2 (100)  := 'POC_APPR_PROCESS';
+      p_user_id      NUMBER;
+      p_requestor    VARCHAR2 (100);
+      p_resp_id      NUMBER;
+      p_appl_id      NUMBER;
+      p_org_id       NUMBER;
+      ERROR_CODE     VARCHAR2 (100);
+      error_msg      VARCHAR2 (1000);
+      p_unit         VARCHAR2 (1000);
+      cancel_error   VARCHAR2 (1000);
+
+      CURSOR get_notif
+      IS
+         SELECT wn.notification_id, wn.recipient_role
+           FROM wf_notifications wn
+          WHERE wn.MESSAGE_TYPE = 'CUSTAPPR'
+            AND SUBSTR (wn.item_key, 1, INSTR (wn.item_key, '_') - 1) = inq_id
+            AND wn.status = 'OPEN'
+            AND wn.message_name NOT LIKE ('%ACCEPT')
+            AND wn.message_name NOT LIKE ('%REJ');
+   BEGIN
+      FOR c_get_notif IN get_notif
+      LOOP
+         BEGIN
+            wf_notification.CANCEL (c_get_notif.notification_id,
+                                    c_get_notif.recipient_role
+                                   );
+            wf_notification.CLOSE (c_get_notif.notification_id,
+                                   c_get_notif.recipient_role
+                                  );
+         EXCEPTION
+            WHEN OTHERS
+            THEN
+               cancel_error := SQLERRM (SQLCODE);
+         END;
+      END LOOP;
+
+      COMMIT;
+      p_user_id := fnd_profile.VALUE ('user_id');
+      p_resp_id := fnd_profile.VALUE ('resp_id');
+      p_appl_id := fnd_profile.VALUE ('resp_appl_id');
+
+      SELECT NVL (zpch.org_id, 101)
+        INTO p_org_id
+        FROM cust_usg_ont_inquiry zpch
+       WHERE zpch.inquiry_id = inq_id;
+
+      SELECT user_name
+        INTO p_requestor
+        FROM fnd_user
+       WHERE user_id = p_user_id;
+
+      SELECT hou.NAME
+        INTO p_unit
+        FROM hr_organization_units hou
+       WHERE organization_id = p_org_id;
+
+      fnd_global.apps_initialize (p_user_id, p_resp_id, p_appl_id);
+      wf_engine.createprocess (itemtype      => itemtype,
+                               itemkey       => itemkey,
+                               process       => wfprocess
+                              );
+      wf_engine.setitemattrtext (itemtype      => itemtype,
+                                 itemkey       => itemkey,
+                                 aname         => 'INQ_ID',
+                                 avalue        => inq_id
+                                );
+      wf_engine.setitemattrtext (itemtype      => itemtype,
+                                 itemkey       => itemkey,
+                                 aname         => 'REQ',
+                                 avalue        => p_requestor
+                                );
+      wf_engine.setitemattrtext (itemtype      => itemtype,
+                                 itemkey       => itemkey,
+                                 aname         => 'OU_NAME',
+                                 avalue        => p_unit
+                                );
+      wf_engine.setitemattrnumber (itemtype      => itemtype,
+                                   itemkey       => itemkey,
+                                   aname         => 'POC_OU_ID',
+                                   avalue        => p_org_id
+                                  );
+      wf_engine.startprocess (itemtype => itemtype, itemkey => itemkey);
+      COMMIT;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         ERROR_CODE := SQLCODE;
+         error_msg := SQLERRM (SQLCODE);
+         fnd_file.put_line (fnd_file.output, ERROR_CODE);
+         fnd_file.put_line (fnd_file.output, error_msg);
+   END run_cust_wf;
+
+   PROCEDURE approver_required (
+      itemtype    IN       VARCHAR2,
+      itemkey     IN       VARCHAR2,
+      actid       IN       NUMBER,
+      funcmode    IN       VARCHAR2,
+      resultout   IN OUT   VARCHAR2
+   )
+   IS
+      v_flag   VARCHAR2 (1);
+   BEGIN
+      v_flag := fnd_profile.VALUE ('PDA');
+
+      IF v_flag = 'N'
+      THEN
+         resultout := 'COMPLETE' || ':' || 'N';
+      ELSE
+         resultout := 'COMPLETE' || ':' || 'Y';
+      END IF;
+   END;
+
+   PROCEDURE set_startup_values (
+      itemtype    IN       VARCHAR2,
+      itemkey     IN       VARCHAR2,
+      actid       IN       NUMBER,
+      funcmode    IN       VARCHAR2,
+      resultout   IN OUT   VARCHAR2
+   )
+   IS
+      l_inq_id         NUMBER;
+      poc_num          number;--VARCHAR2 (110);
+      v_style_ref      VARCHAR2 (100);
+      l_document_id    CLOB;
+      p_document_id    CLOB;
+      l_hdr_details    CLOB;
+      l_fin_doc        CLOB;
+      l_costing        CLOB;
+      l_item_details   CLOB;
+      ERROR_CODE       VARCHAR2 (100);
+      error_msg        VARCHAR2 (100);
+      l_org            NUMBER;
+      p_unit           VARCHAR2 (100);
+   BEGIN
+      IF (funcmode = 'RUN')
+      THEN
+         l_inq_id :=
+            wf_engine.getitemattrtext (itemtype      => itemtype,
+                                       itemkey       => itemkey,
+                                       aname         => 'INQ_ID'
+                                      );
+      END IF;
+
+      IF l_inq_id IS NOT NULL
+      THEN
+         SELECT zpch.inquiry_number, zpch.org_id, style_ref
+           INTO poc_num, l_org, v_style_ref
+           FROM cust_usg_ont_inquiry zpch
+          WHERE 1 = 1 AND zpch.inquiry_id = l_inq_id;
+
+         l_hdr_details := 'PLSQL:CUST_POC_PROC.GET_POC_HEADER/' || l_inq_id;
+         l_fin_doc := 'PLSQL:CUST_POC_PROC.GET_POC_LINES/' || l_inq_id;
+         wf_engine.setitemattrtext (itemtype      => itemtype,
+                                    itemkey       => itemkey,
+                                    aname         => 'POC',
+                                    avalue        => poc_num --|| ' (' || v_style_ref || ')'
+                                   );
+         wf_engine.setitemattrtext (itemtype      => itemtype,
+                                    itemkey       => itemkey,
+                                    aname         => 'STYLE_REF',
+                                    avalue        => v_style_ref
+                                   );
+         wf_engine.setitemattrtext (itemtype      => itemtype,
+                                    itemkey       => itemkey,
+                                    aname         => 'HDR_DETAILS',
+                                    avalue        => l_hdr_details
+                                   );
+         wf_engine.setitemattrtext (itemtype      => itemtype,
+                                    itemkey       => itemkey,
+                                    aname         => 'GET_POC_LINES',
+                                    avalue        => l_fin_doc
+                                   );
+         wf_engine.setitemattrtext (itemtype      => itemtype,
+                                    itemkey       => itemkey,
+                                    aname         => 'GET_ITEM_DTLS',
+                                    avalue        => l_item_details
+                                   );
+         wf_engine.setitemattrtext (itemtype      => itemtype,
+                                    itemkey       => itemkey,
+                                    aname         => 'POC_COST_DTL',
+                                    avalue        => l_costing
+                                   );
+         resultout := 'COMPLETE' || ':' || 'ACTIVITY_PERFORMED';
+      END IF;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         ERROR_CODE := SQLCODE;
+         error_msg := SQLERRM (SQLCODE);
+         fnd_file.put_line (fnd_file.output, ERROR_CODE);
+         fnd_file.put_line (fnd_file.output, error_msg);
+   END set_startup_values;
+
+   PROCEDURE get_poc_header (
+      document_id     IN              VARCHAR2,
+      display_type    IN              VARCHAR2,
+      document        IN OUT NOCOPY   CLOB,
+      document_type   IN OUT NOCOPY   VARCHAR2
+   )
+   IS
+--      l_itemtype   VARCHAR2 (50);
+--      l_itemkey    VARCHAR2 (50);
+      l_body   CLOB;
+      inq_id   NUMBER;
+      nl       VARCHAR2 (1)                   := fnd_global.NEWLINE;
+      c        cust_usg_ont_inquiry%ROWTYPE;
+      V_IMAGE  BLOB;
+   BEGIN
+      SELECT *
+        INTO c
+        FROM cust_usg_ont_inquiry uoi
+       WHERE uoi.inquiry_id = document_id;
+
+         SELECT fl.FILE_DATA
+         INTO V_IMAGE
+          FROM fnd_attached_docs_form_vl fa, fnd_lobs fl
+         WHERE FA.DOCUMENT_ID =  document_id
+          AND fa.media_id = fl.file_id;
+
+      document_type := 'text/html';
+      --
+      l_body :=
+            l_body
+         || '<TABLE border=0 cellpadding=0 cellspacing=0 <width=100%><TR>
+          <td align=LEFT valign=baseline ><font color=#336699 face="Arial, Helvetica, Geneva, sans-serif" size=2>'
+         || '<b>'
+         || 'POC Header Details'
+         || '</TD></TR></TABLE>';
+      l_body := l_body;
+      l_body := l_body;
+      l_body :=
+            l_body
+         || '<table  cellspacing="0" ; cellpadding="4"; width=100%> <thead><tr>'
+         || '<TH align=LEFT><font-family:Arial,Helvetica,Geneva,sans-serif; color:#000001><font size=2>'
+         || '</TH>'
+         || nl
+         || '<TH align=LEFT><font-family:Arial,Helvetica,Geneva,sans-serif; color:#000001><font size=2>'
+         || '</TH>'
+         || nl
+         || '<TH align=LEFT><font-family:Arial,Helvetica,Geneva,sans-serif; color:#000001><font size=2>'
+         || '</TH>'
+         || nl
+         || '<TH align=LEFT><font-family:Arial,Helvetica,Geneva,sans-serif; color:#000001><font size=2>'
+         || '</TH>'
+         || nl
+         || '</thead>
+            </tr>
+            <tbody>';
+      l_body :=
+            l_body
+         || '<tr> <td nowrap align=left font color=#000000 face="Arial, Helvetica, Geneva, sans-serif"><font size=2>'
+         || '<b>POC Number : </b>'
+         || c.inquiry_number
+         || '</td> <td nowrap align=left font color=#000000 face="Arial, Helvetica, Geneva, sans-serif" ><font size=2>'
+         || '<b>Customer Name : </b>'
+         || c.customer_name
+         || '</td> <td nowrap align=left font color=#000000 face="Arial, Helvetica, Geneva, sans-serif" ><font size=2>'
+         || '<b>Type : </b>'
+         || c.TYPE
+         || '</td> <td nowrap align=left font color=#000000 face="Arial, Helvetica, Geneva, sans-serif" ><font size=2>'
+         || '<b>Customer Article : </b>'
+         || c.style_ref
+         || '</td> </tr> <tr> <td nowrap align=left font color=#000000 face="Arial, Helvetica, Geneva, sans-serif" ><font size=2>'
+         || '<b>Article : </b>'
+         || c.article
+         || '</td> <td nowrap align=left font color=#000000 face="Arial, Helvetica, Geneva, sans-serif" ><font size=2>'
+         || '<b>Gender : </b>'
+         || c.category_id
+         || '</td> <td nowrap align=left font color=#000000 face="Arial, Helvetica, Geneva, sans-serif" ><font size=2>'
+         || '<b>Currency : </b>'
+         || c.currency_id
+         || '</td> <td nowrap align=left font color=#000000 face="Arial, Helvetica, Geneva, sans-serif" ><font size=2>'
+         || '<b>Unit of Measure : </b>'
+         || c.measure_unit_id --||' '|| v_image
+
+         || '</td> </tr> </tbody> '
+         || nl;
+      l_body := l_body || '</table>';
+      document := l_body;
+      document_type := 'text/html';
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         document := '<H4>Error: ' || SQLERRM || '</H4>';
+   END get_poc_header;
+
+   PROCEDURE get_poc_lines (
+      document_id     IN              VARCHAR2,
+      display_type    IN              VARCHAR2,
+      document        IN OUT NOCOPY   CLOB,
+      document_type   IN OUT NOCOPY   VARCHAR2
+   )
+   IS
+      l_body    VARCHAR2 (32767);
+      inq_id    NUMBER;
+      nl        VARCHAR2 (1)                      := fnd_global.NEWLINE;
+      l_sr_no   NUMBER                            := 1;
+      c         cust_usg_ont_pcosting_v%ROWTYPE;
+   BEGIN
+      SELECT *
+        INTO c
+        FROM cust_usg_ont_pcosting_v
+       WHERE inquiry_id = document_id;
+
+      document_type := 'text/html';
+      --
+      l_body := nl || nl;
+      l_body :=
+            l_body
+         || '<TABLE border=0 cellpadding=0 cellspacing=0 <width=100%><TR>
+          <td align=LEFT valign=baseline ><font color=#336699 size=2>'
+         || '<b>'
+         || 'POC Details'
+         || '</b>'
+         || '</TD></TR></TABLE>'
+         || nl;
+      l_body := l_body || nl;
+      l_body :=
+            l_body
+         || '<table   width=100%> <thead><tr>'
+         || '<TH align=LEFT bgcolor="#d9e5ef"><color:#000001><font size=2>'
+         || 'Material Cost'
+         || '</TH>'
+         || nl
+         || '<TH align=LEFT  bgcolor="#d9e5ef"><color:#000001><font size=2>'
+         || 'Labour Cost'
+         || '</TH>'
+         || nl
+         || '<TH align=LEFT  bgcolor="#d9e5ef"><color:#000001><font size=2>'
+         || 'Overheads'
+         || '</TH>'
+         || nl
+         || '<TH align=LEFT  bgcolor="#d9e5ef"><color:#000001><font size=2>'
+         || 'Sample Cost'
+         || '</TH>'
+         || nl
+         || '<TH align=LEFT  bgcolor="#d9e5ef"><color:#000001><font size=2>'
+         || 'Administration'
+         || '</TH>'
+         || nl
+         || '<TH align=LEFT  bgcolor="#d9e5ef"><color:#000001><font size=2>'
+         || 'Royalty'
+         || '</TH>'
+         || nl
+         || '<TH align=LEFT  bgcolor="#d9e5ef"><color:#000001><font size=2>'
+         || 'Tooling Expense'
+         || '</TH>'
+         || nl
+         || '<TH align=LEFT  bgcolor="#d9e5ef"><color:#000001><font size=2>'
+         || 'Miscellaneous Amount'
+         || '</TH>'
+         || nl
+         || '<TH align=LEFT  bgcolor="#d9e5ef"><color:#000001><font size=2>'
+         || 'Testing Cost'
+         || '</TH>'
+         || nl
+         || '<TH align=LEFT  bgcolor="#d9e5ef"><color:#000001><font size=2>'
+         || 'Rejection'
+         || '</TH>'
+         || nl
+         || '<TH align=LEFT  bgcolor="#d9e5ef"><color:#000001><font size=2>'
+         || 'Manufacturing Cost'
+         || '</TH>'
+         || nl
+         || '<TH align=LEFT  bgcolor="#d9e5ef"><color:#000001><font size=2>'
+         || 'Freights'
+         || '</TH>'
+         || nl
+         || '<TH align=LEFT  bgcolor="#d9e5ef"><color:#000001><font size=2>'
+         || 'EDS'
+         || '</TH>'
+         || nl
+         || '<TH align=LEFT  bgcolor="#d9e5ef"><color:#000001><font size=2>'
+         || 'Commission'
+         || '</TH>'
+         || nl
+         || '<TH align=LEFT  bgcolor="#d9e5ef"><color:#000001><font size=2>'
+         || 'Add Profit'
+         || '</TH>'
+         || nl
+         || '<TH align=LEFT  bgcolor="#d9e5ef"><color:#000001><font size=2>'
+         || 'Price'
+         || '</TH>'
+         || nl
+         || '<TH align=LEFT  bgcolor="#d9e5ef"><color:#000001><font size=2>'
+         || 'Exchange Rate'
+         || '</TH>'
+         || nl
+         || '<TH align=LEFT  bgcolor="#d9e5ef"><color:#000001><font size=2>'
+         || 'Exchange Price'
+         || '</TH>'
+         || nl
+         || '</thead>
+            </tr>
+            <tbody>';
+      l_body :=
+            l_body
+         || '</td> <td nowrap align=left bgcolor="#eeeeee" ><font size=2>'
+         || c.material_cost
+         || '</td> <td nowrap align=LEFT bgcolor="#eeeeee" ><font size=2>'
+         || c.lab_cost
+         || '</td> <td nowrap align=LEFT bgcolor="#eeeeee" ><font size=2>'
+         || c.overhead
+         || '</td> <td nowrap align=LEFT bgcolor="#eeeeee" ><font size=2>'
+         || c.sampling_cost
+         || '</td> <td nowrap align=LEFT bgcolor="#eeeeee" ><font size=2>'
+         || c.adm
+         || '</td> <td nowrap align=LEFT bgcolor="#eeeeee" ><font size=2>'
+         || c.royality
+         || '</td> <td nowrap align=LEFT bgcolor="#eeeeee" ><font size=2>'
+         || c.tooling_expense
+         || '</td> <td nowrap align=LEFT bgcolor="#eeeeee" ><font size=2>'
+         || c.miscell_amount
+         || '</td> <td nowrap align=LEFT bgcolor="#eeeeee" ><font size=2>'
+         || c.testing_cost
+         || '</td> <td nowrap align=LEFT bgcolor="#eeeeee" ><font size=2>'
+         || c.rejection
+         || '</td> <td nowrap align=LEFT bgcolor="#eeeeee" ><font size=2>'
+         || c.manu_cost
+         || '</td> <td nowrap align=LEFT bgcolor="#eeeeee" ><font size=2>'
+         || c.frieght
+         || '</td> <td nowrap align=LEFT bgcolor="#eeeeee" ><font size=2>'
+         || c.eds
+         || '</td> <td nowrap align=LEFT bgcolor="#eeeeee" ><font size=2>'
+         || c.comm
+         || '</td> <td nowrap align=LEFT bgcolor="#eeeeee" ><font size=2>'
+         || c.add_profit
+         || '</td> <td nowrap align=LEFT bgcolor="#eeeeee" ><font size=2>'
+         || c.price
+         || '</td> <td nowrap align=LEFT bgcolor="#eeeeee" ><font size=2>'
+         || c.rate
+         || '</td> <td nowrap align=LEFT bgcolor="#eeeeee" ><font size=2>'
+         || c.ex_price
+         || '</td> <td nowrap align=LEFT bgcolor="#eeeeee" ><font size=2>'
+/*         || c.comm
+         || '</td> </tr> </tbody> '*/
+         || nl;
+      l_body := l_body || '</table>';
+      document := l_body;
+--
+--Setting document type which is nothing but MIME type
+--
+      document_type := 'text/html';
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         document := '<H4>Error: ' || SQLERRM || '</H4>';
+   END get_poc_lines;
+
+   PROCEDURE get_first_approver_sole (
+      itemtype    IN       VARCHAR2,
+      itemkey     IN       VARCHAR2,
+      actid       IN       NUMBER,
+      funcmode    IN       VARCHAR2,
+      resultout   IN OUT   VARCHAR2
+   )
+   IS
+      ERROR_CODE     VARCHAR2 (100);
+      error_msg      VARCHAR2 (1000);
+      l_position     NUMBER;
+      p_approver     VARCHAR2 (100);
+      l_requestor    VARCHAR2 (100);
+      email          VARCHAR2 (100);
+      l_org_id       NUMBER;
+      pc_header_id   NUMBER;                           ---  add two parameter
+      oe_type_id     NUMBER;
+   BEGIN
+      IF (funcmode = 'RUN')
+      THEN
+         l_position :=
+            wf_engine.getitemattrnumber (itemtype      => itemtype,
+                                         itemkey       => itemkey,
+                                         aname         => 'POSITION'
+                                        );
+         l_requestor :=
+            wf_engine.getitemattrtext (itemtype      => itemtype,
+                                       itemkey       => itemkey,
+                                       aname         => 'REQ'
+                                      );
+         l_org_id :=
+            wf_engine.getitemattrtext (itemtype      => itemtype,
+                                       itemkey       => itemkey,
+                                       aname         => 'POC_OU_ID'
+                                      );
+         pc_header_id :=
+            wf_engine.getitemattrtext (itemtype      => itemtype,
+                                       itemkey       => itemkey,
+                                       aname         => 'INQ_ID'
+                                      );
+      END IF;
+
+      IF l_position IS NULL
+      THEN
+         l_position := 1;
+      END IF;
+
+      BEGIN
+         SELECT character3
+           INTO p_approver
+           FROM qa_results
+          WHERE plan_id IN (9100, 11100)
+            AND TO_NUMBER (character1) = l_position
+            AND character2 = 'SOLE'
+            AND character6 = l_org_id;
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            p_approver := NULL;
+      END;
+
+      wf_engine.setitemattrnumber (itemtype      => itemtype,
+                                   itemkey       => itemkey,
+                                   aname         => 'POSITION',
+                                   avalue        => l_position
+                                  );
+      wf_engine.setitemattrtext (itemtype      => itemtype,
+                                 itemkey       => itemkey,
+                                 aname         => 'APPROVER',
+                                 avalue        => p_approver
+                                );
+
+      IF p_approver IS NULL
+      THEN
+         resultout := 'COMPLETE' || ':' || 'N';
+      ELSE
+         resultout := 'COMPLETE' || ':' || 'Y';
+      END IF;
+
+      COMMIT;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         ERROR_CODE := SQLCODE;
+         error_msg := SQLERRM (SQLCODE);
+         fnd_file.put_line (fnd_file.output, ERROR_CODE);
+         fnd_file.put_line (fnd_file.output, error_msg);
+   END get_first_approver_sole;
+
+   PROCEDURE get_first_approver_shoe_comp (
+      itemtype    IN       VARCHAR2,
+      itemkey     IN       VARCHAR2,
+      actid       IN       NUMBER,
+      funcmode    IN       VARCHAR2,
+      resultout   IN OUT   VARCHAR2
+   )
+   IS
+      ERROR_CODE     VARCHAR2 (100);
+      error_msg      VARCHAR2 (1000);
+      l_position     NUMBER;
+      p_approver     VARCHAR2 (100);
+      l_requestor    VARCHAR2 (100);
+      email          VARCHAR2 (100);
+      l_org_id       NUMBER;
+      pc_header_id   NUMBER;                           ---  add two parameter
+      oe_type_id     NUMBER;
+   BEGIN
+      IF (funcmode = 'RUN')
+      THEN
+         l_position :=
+            wf_engine.getitemattrnumber (itemtype      => itemtype,
+                                         itemkey       => itemkey,
+                                         aname         => 'POSITION_SHOE_COMP'
+                                        );
+         l_requestor :=
+            wf_engine.getitemattrtext (itemtype      => itemtype,
+                                       itemkey       => itemkey,
+                                       aname         => 'REQ'
+                                      );
+         l_org_id :=
+            wf_engine.getitemattrtext (itemtype      => itemtype,
+                                       itemkey       => itemkey,
+                                       aname         => 'POC_OU_ID'
+                                      );
+         pc_header_id :=
+            wf_engine.getitemattrtext (itemtype      => itemtype,
+                                       itemkey       => itemkey,
+                                       aname         => 'INQ_ID'
+                                      );
+      END IF;
+
+      IF l_position IS NULL
+      THEN
+         l_position := 1;
+      END IF;
+
+      BEGIN
+         SELECT character3
+           INTO p_approver
+           FROM qa_results
+          WHERE plan_id IN (9100, 11100)
+            AND TO_NUMBER (character1) = l_position
+            AND character2 = 'SHOE COMPONENTS'
+            AND character6 = l_org_id;
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            p_approver := NULL;
+      END;
+
+      wf_engine.setitemattrnumber (itemtype      => itemtype,
+                                   itemkey       => itemkey,
+                                   aname         => 'POSITION_SHOE_COMP',
+                                   avalue        => l_position
+                                  );
+      wf_engine.setitemattrtext (itemtype      => itemtype,
+                                 itemkey       => itemkey,
+                                 aname         => 'APPROVER_SHOE_COMP',
+                                 avalue        => p_approver
+                                );
+
+      IF p_approver IS NULL
+      THEN
+         resultout := 'COMPLETE' || ':' || 'N';
+      ELSE
+         resultout := 'COMPLETE' || ':' || 'Y';
+      END IF;
+
+      COMMIT;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         ERROR_CODE := SQLCODE;
+         error_msg := SQLERRM (SQLCODE);
+         fnd_file.put_line (fnd_file.output, ERROR_CODE);
+         fnd_file.put_line (fnd_file.output, error_msg);
+   END get_first_approver_shoe_comp;
+
+   PROCEDURE get_first_approver_leather (
+      itemtype    IN       VARCHAR2,
+      itemkey     IN       VARCHAR2,
+      actid       IN       NUMBER,
+      funcmode    IN       VARCHAR2,
+      resultout   IN OUT   VARCHAR2
+   )
+   IS
+      ERROR_CODE     VARCHAR2 (100);
+      error_msg      VARCHAR2 (1000);
+      l_position     NUMBER;
+      p_approver     VARCHAR2 (100);
+      l_requestor    VARCHAR2 (100);
+      email          VARCHAR2 (100);
+      l_org_id       NUMBER;
+      pc_header_id   NUMBER;                           ---  add two parameter
+      oe_type_id     NUMBER;
+   BEGIN
+      IF (funcmode = 'RUN')
+      THEN
+         l_position :=
+            wf_engine.getitemattrnumber (itemtype      => itemtype,
+                                         itemkey       => itemkey,
+                                         aname         => 'POSITION_LEATHER'
+                                        );
+         l_requestor :=
+            wf_engine.getitemattrtext (itemtype      => itemtype,
+                                       itemkey       => itemkey,
+                                       aname         => 'REQ'
+                                      );
+         l_org_id :=
+            wf_engine.getitemattrtext (itemtype      => itemtype,
+                                       itemkey       => itemkey,
+                                       aname         => 'POC_OU_ID'
+                                      );
+         pc_header_id :=
+            wf_engine.getitemattrtext (itemtype      => itemtype,
+                                       itemkey       => itemkey,
+                                       aname         => 'INQ_ID'
+                                      );
+      END IF;
+
+      IF l_position IS NULL
+      THEN
+         l_position := 1;
+      END IF;
+
+      BEGIN
+         SELECT character3
+           INTO p_approver
+           FROM qa_results
+          WHERE plan_id IN (9100, 11100)
+            AND TO_NUMBER (character1) = l_position
+            AND character2 = 'LEATHER'
+            AND character6 = l_org_id;
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            p_approver := NULL;
+      END;
+
+      wf_engine.setitemattrnumber (itemtype      => itemtype,
+                                   itemkey       => itemkey,
+                                   aname         => 'POSITION_LEATHER',
+                                   avalue        => l_position
+                                  );
+      wf_engine.setitemattrtext (itemtype      => itemtype,
+                                 itemkey       => itemkey,
+                                 aname         => 'APPROVER_LEATHER',
+                                 avalue        => p_approver
+                                );
+
+      IF p_approver IS NULL
+      THEN
+         resultout := 'COMPLETE' || ':' || 'N';
+      ELSE
+         resultout := 'COMPLETE' || ':' || 'Y';
+      END IF;
+
+      COMMIT;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         ERROR_CODE := SQLCODE;
+         error_msg := SQLERRM (SQLCODE);
+         fnd_file.put_line (fnd_file.output, ERROR_CODE);
+         fnd_file.put_line (fnd_file.output, error_msg);
+   END get_first_approver_leather;
+
+   PROCEDURE get_first_approver_import (
+      itemtype    IN       VARCHAR2,
+      itemkey     IN       VARCHAR2,
+      actid       IN       NUMBER,
+      funcmode    IN       VARCHAR2,
+      resultout   IN OUT   VARCHAR2
+   )
+   IS
+      ERROR_CODE     VARCHAR2 (100);
+      error_msg      VARCHAR2 (1000);
+      l_position     NUMBER;
+      p_approver     VARCHAR2 (100);
+      l_requestor    VARCHAR2 (100);
+      email          VARCHAR2 (100);
+      l_org_id       NUMBER;
+      pc_header_id   NUMBER;                           ---  add two parameter
+      oe_type_id     NUMBER;
+   BEGIN
+      IF (funcmode = 'RUN')
+      THEN
+         l_position :=
+            wf_engine.getitemattrnumber (itemtype      => itemtype,
+                                         itemkey       => itemkey,
+                                         aname         => 'POSITION_IMPORT'
+                                        );
+         l_requestor :=
+            wf_engine.getitemattrtext (itemtype      => itemtype,
+                                       itemkey       => itemkey,
+                                       aname         => 'REQ'
+                                      );
+         l_org_id :=
+            wf_engine.getitemattrtext (itemtype      => itemtype,
+                                       itemkey       => itemkey,
+                                       aname         => 'POC_OU_ID'
+                                      );
+         pc_header_id :=
+            wf_engine.getitemattrtext (itemtype      => itemtype,
+                                       itemkey       => itemkey,
+                                       aname         => 'INQ_ID'
+                                      );
+      END IF;
+
+      IF l_position IS NULL
+      THEN
+         l_position := 1;
+      END IF;
+
+      BEGIN
+         SELECT character3
+           INTO p_approver
+           FROM qa_results
+          WHERE plan_id IN (9100, 11100)
+            AND TO_NUMBER (character1) = l_position
+            AND character2 = 'IMPORT'
+            AND character6 = l_org_id;
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            p_approver := NULL;
+      END;
+
+      wf_engine.setitemattrnumber (itemtype      => itemtype,
+                                   itemkey       => itemkey,
+                                   aname         => 'POSITION_IMPORT',
+                                   avalue        => l_position
+                                  );
+      wf_engine.setitemattrtext (itemtype      => itemtype,
+                                 itemkey       => itemkey,
+                                 aname         => 'APPROVER_IMPORT',
+                                 avalue        => p_approver
+                                );
+
+      IF p_approver IS NULL
+      THEN
+         resultout := 'COMPLETE' || ':' || 'N';
+      ELSE
+         resultout := 'COMPLETE' || ':' || 'Y';
+      END IF;
+
+      COMMIT;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         ERROR_CODE := SQLCODE;
+         error_msg := SQLERRM (SQLCODE);
+         fnd_file.put_line (fnd_file.output, ERROR_CODE);
+         fnd_file.put_line (fnd_file.output, error_msg);
+   END get_first_approver_import;
+
+   PROCEDURE next_approver_exist (
+      itemtype    IN       VARCHAR2,
+      itemkey     IN       VARCHAR2,
+      actid       IN       NUMBER,
+      funcmode    IN       VARCHAR2,
+      resultout   IN OUT   VARCHAR2
+   )
+   IS
+      ERROR_CODE     VARCHAR2 (100);
+      error_msg      VARCHAR2 (1000);
+      l_approver     VARCHAR2 (100);
+      v_approver     VARCHAR2 (100);
+      l_requestor    VARCHAR2 (100);
+      l_position     NUMBER;
+      l_org_id       NUMBER;
+      pc_header_id   NUMBER;                           ---  add two parameter
+      oe_type_id     NUMBER;
+   BEGIN
+      IF (funcmode = 'RUN')
+      THEN
+         l_position :=
+            wf_engine.getitemattrnumber (itemtype      => itemtype,
+                                         itemkey       => itemkey,
+                                         aname         => 'POSITION_NEXT'
+                                        );
+         l_org_id :=
+            wf_engine.getitemattrtext (itemtype      => itemtype,
+                                       itemkey       => itemkey,
+                                       aname         => 'POC_OU_ID'
+                                      );
+         pc_header_id :=
+            wf_engine.getitemattrtext (itemtype      => itemtype,
+                                       itemkey       => itemkey,
+                                       aname         => 'INQ_ID'
+                                      );
+      END IF;
+
+      IF l_position IS NULL
+      THEN
+         l_position := 1;
+      ELSE
+         l_position := l_position + 1;
+      END IF;
+
+      BEGIN
+         SELECT character3
+           INTO v_approver
+           FROM qa_results
+          WHERE plan_id IN (9100, 11100)
+            AND TO_NUMBER (character1) = l_position
+            AND character2 = 'NEXT LEVEL'
+            AND character6 = l_org_id;
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            v_approver := NULL;
+      END;
+
+      wf_engine.setitemattrnumber (itemtype      => itemtype,
+                                   itemkey       => itemkey,
+                                   aname         => 'POSITION_NEXT',
+                                   avalue        => l_position
+                                  );
+      wf_engine.setitemattrtext (itemtype      => itemtype,
+                                 itemkey       => itemkey,
+                                 aname         => 'APPROVER_NEXT',
+                                 avalue        => v_approver
+                                );
+
+      IF v_approver IS NOT NULL
+      THEN
+         resultout := 'COMPLETE' || ':' || 'Y';
+      ELSIF v_approver IS NULL
+      THEN
+         resultout := 'COMPLETE' || ':' || 'N';
+      END IF;
+
+      COMMIT;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         ERROR_CODE := SQLCODE;
+         error_msg := SQLERRM (SQLCODE);
+         fnd_file.put_line (fnd_file.output, ERROR_CODE);
+         fnd_file.put_line (fnd_file.output, error_msg);
+   END next_approver_exist;
+
+   PROCEDURE update_table (
+      itemtype    IN       VARCHAR2,
+      itemkey     IN       VARCHAR2,
+      actid       IN       NUMBER,
+      funcmode    IN       VARCHAR2,
+      resultout   IN OUT   VARCHAR2
+   )
+   IS
+      ERROR_CODE   VARCHAR2 (100);
+      error_msg    VARCHAR2 (1000);
+      inq_id       NUMBER;
+      l_approver   VARCHAR2 (100);
+   BEGIN
+      IF (funcmode = 'RUN')
+      THEN
+         inq_id :=
+            wf_engine.getitemattrtext (itemtype      => itemtype,
+                                       itemkey       => itemkey,
+                                       aname         => 'INQ_ID'
+                                      );
+
+         UPDATE cust_usg_ont_pcosting
+            SET POST = 'Y'
+          WHERE inquiry_id = inq_id;
+
+         COMMIT;
+
+         UPDATE cust_usg_ont_inquiry
+            SET POST = 'Y'
+          WHERE inquiry_id = inq_id;
+
+         COMMIT;
+      END IF;
+
+      resultout := 'COMPLETE' || ':' || 'COMPLETE';
+      COMMIT;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         ERROR_CODE := SQLCODE;
+         error_msg := SQLERRM (SQLCODE);
+         fnd_file.put_line (fnd_file.output, ERROR_CODE);
+         fnd_file.put_line (fnd_file.output, error_msg);
+   END update_table;
+
+   PROCEDURE approval_pending_users (
+      itemtype    IN       VARCHAR2,
+      itemkey     IN       VARCHAR2,
+      actid       IN       NUMBER,
+      funcmode    IN       VARCHAR2,
+      resultout   IN OUT   VARCHAR2
+   )
+   IS
+      l_approvers   VARCHAR (1000);
+      ERROR_CODE    VARCHAR2 (100);
+      error_msg     VARCHAR2 (1000);
+   BEGIN
+      FOR l IN (SELECT DISTINCT wn.to_user
+                           FROM wf_notifications wn
+                          WHERE wn.MESSAGE_TYPE = 'CUSTAPPR'
+                            AND wn.status = 'OPEN'
+                            AND wn.item_key = itemkey
+                            AND wn.to_user IN (SELECT character2
+                                                 FROM qa_results
+                                                WHERE plan_id IN
+                                                                (9100, 11100)))
+      LOOP
+         IF l_approvers IS NULL
+         THEN
+            l_approvers := l.to_user;
+         ELSE
+            l_approvers := l_approvers || ' ,' || l.to_user;
+         END IF;
+      END LOOP;
+
+      wf_engine.setitemattrtext (itemtype      => itemtype,
+                                 itemkey       => itemkey,
+                                 aname         => 'APPR_PEND_USERS',
+                                 avalue        => l_approvers
+                                );
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         ERROR_CODE := SQLCODE;
+         error_msg := SQLERRM (SQLCODE);
+         fnd_file.put_line (fnd_file.output, ERROR_CODE);
+         fnd_file.put_line (fnd_file.output, error_msg);
+   END approval_pending_users;
+
+   PROCEDURE rej_update_table (
+      itemtype    IN       VARCHAR2,
+      itemkey     IN       VARCHAR2,
+      actid       IN       NUMBER,
+      funcmode    IN       VARCHAR2,
+      resultout   IN OUT   VARCHAR2
+   )
+   IS
+      ERROR_CODE   VARCHAR2 (100);
+      error_msg    VARCHAR2 (1000);
+      inq_id       NUMBER;
+      l_approver   VARCHAR2 (100);
+   BEGIN
+      IF (funcmode = 'RUN')
+      THEN
+         inq_id :=
+            wf_engine.getitemattrtext (itemtype      => itemtype,
+                                       itemkey       => itemkey,
+                                       aname         => 'INQ_ID'
+                                      );
+
+         UPDATE cust_usg_ont_pcosting
+            SET POST = NULL
+          WHERE inquiry_id = inq_id;
+
+         COMMIT;
+
+         UPDATE cust_usg_ont_inquiry
+            SET POST = NULL
+          WHERE inquiry_id = inq_id;
+
+         COMMIT;
+      END IF;
+
+      resultout := 'COMPLETE' || ':' || 'COMPLETE';
+      COMMIT;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         ERROR_CODE := SQLCODE;
+         error_msg := SQLERRM (SQLCODE);
+         fnd_file.put_line (fnd_file.output, ERROR_CODE);
+         fnd_file.put_line (fnd_file.output, error_msg);
+   END rej_update_table;
+END cust_poc_proc;
+/
