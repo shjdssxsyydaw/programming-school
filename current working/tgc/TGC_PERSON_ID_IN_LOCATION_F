@@ -1,0 +1,48 @@
+CREATE OR REPLACE FUNCTION TGC_PERSON_ID_IN_LOCATION_F(p_transaction_id IN VARCHAR2)
+  RETURN VARCHAR2 IS
+
+/*
+
+Check Person id of Current TRANSACTION_ID of HRMS
+then
+check if person id is exist in HR_LOCATIONS_V table DFF (our company dff not standard)
+then return true condition
+
+*/
+
+
+  CUR_PERSON_ID      VARCHAR2(200);
+
+  FL_Count integer;
+
+BEGIN
+
+  --// Get person id  of Current Transaction
+  begin
+    select s.SELECTED_PERSON_ID
+      into CUR_PERSON_ID
+      from hr_api_transactions s
+     where s.TRANSACTION_ID = p_transaction_id;
+  end;
+
+  --./... gET Person From all locations of HR
+
+  SELECT COUNT(HLV.attribute6)
+  into FL_Count
+    FROM HR_LOCATIONS_V        HLV
+   WHERE 1 = 1
+    AND  HLV.attribute6 = CUR_PERSON_ID;
+
+  --// if current exist in location table then return 1 else 0
+  IF FL_Count = 0 THEN
+    RETURN 0;
+  ELSE
+    RETURN 1;
+  END IF;
+
+EXCEPTION
+  WHEN OTHERS THEN
+    NULL;
+    RETURN NULL;
+
+END;
