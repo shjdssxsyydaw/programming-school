@@ -1,0 +1,20 @@
+Use the DBMS_UTILITY.FORMAT_CALL_STACK function to answer the question "How did I get here?".
+Note that this function only shows you the name of the program unit (e.g., package name) and not the name of the subprogram
+ in that program unit. In 12.1 and higher, you can also use the UTL_CALL_STACK package, which offers the advantage of
+ showing you the name of the subprogram from which the call stack was requested.
+
+--//
+
+CREATE OR REPLACE PROCEDURE proc1
+IS
+BEGIN
+   DBMS_OUTPUT.put_line (DBMS_UTILITY.format_call_stack);
+END;
+
+--//
+
+CREATE OR REPLACE PROCEDURE proc2
+IS
+BEGIN
+   DBMS_OUTPUT.put_line (DBMS_UTILITY.UTL_CALL_STACK);
+END;
