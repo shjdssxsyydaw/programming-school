@@ -1,0 +1,26 @@
+--Convert int to boolean and Boolean to int using Oralce buitin package.Procedure
+
+
+declare
+  -- Boolean parameters are translated from/to integers:
+  -- 0/1/null <--> false/true/null
+  L_bool boolean := sys.diutil.int_to_bool(:capitalize);
+  l_int  integer:=sys.diutil.bool_to_int(L_bool);
+
+--// Created by falick faisal   falickfaisal.com
+
+
+begin
+
+--  if you enter 1 that will convert into "true"    boolean value
+--  if you enter 0 that will convert into "False"    boolean value
+
+-- That do vice verse for Boolean to Int
+--  -- display value
+--  result will be same  that you input
+
+
+dbms_output.put_line(l_int);
+
+
+end;

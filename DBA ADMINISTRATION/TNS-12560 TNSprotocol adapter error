@@ -1,0 +1,9 @@
+The "TNS-12560: TNS:protocol adapter error" sometimes a transient error on a SQL*Net (Oracle*Net) client, happening sporadically. To turn-on tracing for the ORA-12560, use these settings.  Also check /var/log/messages (Linux) for errors:
+
+TRACE_LEVEL_<<listner_name>> = admin
+TRACE_DIRECTORY_<<listner_name>> = <<some directory>>
+TRACE_TIMESTAMP_<<listner_name>> = true
+
+Possible fixes for the TNS-12560 include:
+
+ ora-12560

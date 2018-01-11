@@ -1,0 +1,173 @@
+Declare
+l_object_version_number   NUMBER;
+  l_special_ceiling_step_id NUMBER;
+  l_people_group_id         NUMBER;
+  l_soft_coding_keyflex_id       NUMBER;
+  l_supervisor_id                NUMBER;
+  l_supervisor_id_1              NUMBER;
+  l_sup_person_id                NUMBER;
+  l_group_name                   VARCHAR2(100);
+  l_effective_start_date         DATE;
+  l_effective_end_date           DATE;
+  l_org_now_no_manager_warning   BOOLEAN;
+  l_no_managers_warning          BOOLEAN;
+  l_other_manager_warning        BOOLEAN;
+  l_spp_delete_warning           BOOLEAN;
+  l_entries_changed_warning      VARCHAR2(100);
+  l_tax_district_changed_warning BOOLEAN;
+  l_concatenated_segments        VARCHAR2(100);
+  l_gsp_post_process_warning     VARCHAR2(100);
+  error_desc                     VARCHAR2(240);
+  lv_assg_flag                   CHAR(1);
+  l_job_id                       VARCHAR2(20);
+  l_position_id                  VARCHAR2(20);
+  l_payroll_id                   number;
+  l_pay_basis_id                 number;
+  l_grade_id                     VARCHAR2(20);
+  l_org_id                       VARCHAR2(20);
+  l_loc_id                       VARCHAR2(20);
+  l_assg_cat                     VARCHAR2(50);
+  l_Pos_cat                      VARCHAR2(50);
+  l_assg_start_date              DATE;
+  l_comment_id                   NUMBER;
+  l_pf_flag                      CHAR(1);
+  l_emp_eff_start_date           Date;
+  l_update_mode                  VARCHAR2(100);
+  l_eff_start_date               Date;
+  l_ASSG_PEOPLE_GROUP_ID         number;
+  lv_ass_attribute4         date;
+    lv_ass_attribute2         varchar2(30);
+    lv_ass_attribute3         varchar2(30);
+    lv_effective_date         date;
+    lv_assignment_id          number;
+    lv_assignment_number      varchar2(30);
+    lv_object_version_number  number;
+    lv_soft_coding_keyflex_id number;
+    lv_supervisor_id          number;
+    lv_error_msg              varchar2(400);
+    lv_status                 varchar2(1) := 'Y';
+    lv_datetrack_update_mode  varchar2(30);
+    P_PROBATION_UNIT          varchar2(30);
+    p_notice_period_u         varchar2(30);
+    ------------------------------------------------
+    lv_grade_id                number;
+    lv_position_id             number;
+    lv_job_id                  number;
+    lv_payroll_id              number;
+    lv_location_id             number;
+    lv_organization_id         number;
+    lv_pay_basis_id            number;
+    lv_people_group_id         number := null;
+    lv_ppl_grp_seg1            varchar2(100);
+    lv_ppl_grp_seg2            varchar2(100);
+    lv_ppl_grp_seg3            varchar2(100);
+    lv_ppl_grp_seg6            varchar2(100);
+    lv_ppl_grp_seg7            varchar2(100);
+    lv_special_ceiling_step_id number;
+    lv_employee_category       varchar2(100);
+    lv_employment_category     varchar2(30);
+    lv_grade_ladder_pgm_id     number;
+    l_emp_eff_start_date_2     dATE;
+    l_emp_eff_start_date_2_SUP DATE;
+  
+    --- OUT Variables for Assignment API ---
+    lx_concatenated_segments varchar2(200);
+    lx_comment_id            number;
+    lx_effective_start_date  date;
+    lx_effective_end_date    date;
+    lx_no_managers_warning   boolean;
+    lx_other_manager_warning boolean;
+  
+    --- OUT Variables for Assignment Criteria API ---
+    lx_group_name                 varchar2(100);
+    lx_org_now_no_manager_warning boolean;
+    lx_spp_delete_warning         boolean;
+    lx_entries_changed_warning    varchar2(240);
+    lx_tax_dist_chngd_warning     boolean;
+    lx_cagr_grade_def_id          number; -- bug 2359997
+    lx_cagr_concatenated_segments varchar2(200);
+    lx_hourly_salaried_warning    boolean;
+    
+BEGIN
+
+for i in (select * 
+          from   dev_employee  
+          where line_id > 1
+         )loop
+Begin
+    
+
+      begin
+        SELECT paaf.object_version_number
+          INTO l_object_version_number
+          FROM per_all_assignments_f paaf
+         WHERE SYSDATE BETWEEN paaf.effective_start_date AND
+               paaf.effective_end_date
+           AND paaf.assignment_id = i.assignment_id
+           AND business_group_id = 81;
+      exception
+        when others then
+          null;
+      end;
+      
+    Begin
+      select 
+      trunc(Max(paaf.EFFECTIVE_START_DATE))
+      into
+      l_emp_eff_start_date
+      from per_all_assignments_f paaf where paaf.assignment_id = i.ASSIGNMENT_ID
+      and  paaf.business_group_id = 81;
+    exception
+       when others then
+      dbms_output.put_line(SQLERRM);
+    ENd;    
+    
+    Begin
+      ---------------------------suppervisor----------------------------
+      SELECT paaf.ASSIGNMENT_ID,papf.person_id
+        INTO l_supervisor_id,l_sup_person_id
+        FROM per_all_people_f papf,per_all_assignments_f paaf  
+      WHERE papf.PERSON_ID = paaf.PERSON_ID
+      and sysdate between paaf.EFFECTIVE_START_DATE and paaf.EFFECTIVE_END_DATE
+      and sysdate between papf.EFFECTIVE_START_DATE and papf.EFFECTIVE_END_DATE
+      and papf.employee_number = i.SUPERVISOR_EMP_NO;
+        exception
+         when others then
+        dbms_output.put_line('Super ID Error: ');
+      ENd;      
+
+BEGIN                              
+          hr_assignment_api.update_emp_asg(p_validate                     => false,
+                                           p_effective_date               => l_emp_eff_start_date,
+                                           p_datetrack_update_mode        => 'CORRECTION',
+                                           p_assignment_id                => i.assignment_id,
+                                           p_object_version_number        => l_object_version_number,
+                                           p_supervisor_id                => l_sup_person_id,
+                                           p_assignment_number            => i.EMP_CODE,
+                                           p_supervisor_assignment_id     => l_supervisor_id,
+                                           p_cagr_grade_def_id            => lx_cagr_grade_def_id,
+                                           p_cagr_concatenated_segments   => lx_cagr_concatenated_segments,
+                                           p_concatenated_segments        => lx_concatenated_segments,
+                                           p_soft_coding_keyflex_id       => l_soft_coding_keyflex_id,
+                                           p_comment_id                   => lx_comment_id,
+                                           p_effective_start_date         => lx_effective_start_date,
+                                           p_effective_end_date           => lx_effective_end_date,
+                                           p_no_managers_warning          => lx_no_managers_warning,
+                                           p_other_manager_warning        => lx_other_manager_warning,
+                                           p_hourly_salaried_warning      => lx_hourly_salaried_warning);
+       
+       dbms_output.put_line(i.line_id || ': ' || sqlerrm); 
+      exception
+       when others then
+       dbms_output.put_line(i.line_id || ': ' || sqlerrm);     
+      END;
+
+
+
+
+
+
+      
+End;
+ENd Loop;
+End;           
