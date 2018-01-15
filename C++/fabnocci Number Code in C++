@@ -1,0 +1,28 @@
+#include <iostream>
+
+using namespace std;
+int  last_number,feauter_number,Loop_count;
+double gloden_ratio;
+int main ()
+{
+
+  last_number=0;
+  feauter_number=1;
+
+   for (Loop_count=0;Loop_count<30;Loop_count++)
+
+  {
+      feauter_number=feauter_number+last_number;
+      last_number=feauter_number-last_number;
+      gloden_ratio=feauter_number/last_number;
+
+      cout<< "value of feauter number : "<< feauter_number << "  value of last number: "<< last_number<< " Golden Ratio: " <<gloden_ratio<<endl;
+  }
+
+
+  cout << "Press ENTER to continue..." << endl;
+  cin.get();
+  return 0;
+
+  //system("Pause");
+}

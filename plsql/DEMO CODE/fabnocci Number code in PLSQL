@@ -1,0 +1,16 @@
+declare
+feauter_number integer:=1;
+last_number integer:=0;
+gloden_ratio float;
+begin
+
+for x in 1..30 loop
+
+feauter_number:=feauter_number+last_number;
+last_number:=feauter_number-last_number;
+gloden_ratio:=round(feauter_number/last_number,6);
+Dbms_Output.put_line('value of feauter number : '|| feauter_number || '  value of last number: '|| last_number||'  Golden Ratio: '||gloden_ratio);
+
+end loop;
+
+end;
