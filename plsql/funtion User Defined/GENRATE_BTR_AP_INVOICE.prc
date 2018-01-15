@@ -1,11 +1,14 @@
 create or replace procedure GENRATE_BTR_AP_INVOICE(
-                                                   
+
                                                    P_EMP_CODE       in NUMBER,
                                                    P_USER_ID        in NUMBER,
                                                    P_ORG_ID         in NUMBER,
                                                    P_BTR_ID         in NUMBER,
+                                                   PL_GL_Date       in date,
                                                    P_TRAVELING_MODE VARCHAR2,
-                                                   P_string         out varchar2)
+                                                   P_string         out varchar2,
+                                                   REQ_ID           out number,
+                                                   P_INVOICE_NUMBER out varchar2)
 
  is
 
@@ -16,9 +19,7 @@ create or replace procedure GENRATE_BTR_AP_INVOICE(
   P_PERSON_ID         NUMBER;
   L_RESPONSIBILITY_ID NUMBER;
   L_APPLICATION_ID    NUMBER;
-  REQ_ID              NUMBER;
   CCID_CODE           VARCHAR2(200);
-  P_INVOICE_NUMBER    VARCHAR2(200);
 
   -------------------------------------------FUNCTION-----------------------------
   --*****---------------------------------------------------------------------*****--
@@ -26,16 +27,16 @@ create or replace procedure GENRATE_BTR_AP_INVOICE(
   --*****---------------------------------------------------------------------*****--
 
   CURSOR AP_INVOICE_HEADER IS
-    SELECT S.BTR_ID || ' ' || S.EMPLOYEE_CODE || ' ' ||
+    SELECT S.BTR_NO || ' ' || S.EMPLOYEE_CODE || ' ' ||
            TO_CHAR(SYSDATE, 'MON-YY') INVOICE_NUM,
-           S.BTR_ID || ' ' || S.EMPLOYEE_CODE || ' ' ||
+           S.BTR_NO || ' ' || S.EMPLOYEE_CODE || ' ' ||
            TO_CHAR(SYSDATE, 'MON-YY') SUPPLIER_TAX_INVOICE_NUMBER,
            'STANDARD' INVOICE_TYPE_LOOKUP_CODE,
            S.APPLICATION_DATE INVOICE_DATE,
            S.APPLICATION_DATE TAX_INVOICE_RECORDING_DATE,
            '' VENDOR_ID,
            '' VENDOR_SITE_ID,
-           S.TOTAL_AMOUNT_SUM * S.CURRENCY_RATE INVOICE_AMOUNT,
+           S.TOTAL_AMOUNT_SUM INVOICE_AMOUNT,
            'PKR' INVOICE_CURRENCY_CODE,
            10000 TERMS_ID,
            '' GROUP_ID,
@@ -43,10 +44,15 @@ create or replace procedure GENRATE_BTR_AP_INVOICE(
            P_USER_ID CREATED_BY,
            'BTR_INV' SOURCE,
            'EFT' PAYMENT_METHOD_CODE,
-           SYSDATE GL_DATE,
-           'BTR NO ' || S.BTR_NO || ' OF ' || S.EMPLOYEE_CODE ||
-           ' PLAN DATE ' || ' ' || S.PLAN_FROM_DATE || ' TO ' ||
-           S.PLAN_TO_DATE DESCRIPTION,
+           PL_GL_Date GL_DATE,
+           'BTR Num.: ' || S.BTR_NO || ', BTA Num.: ' ||
+           (SELECT BTA_NO FROM TGC_EXP_BTA_HEADER WHERE BTA_ID = S.BTA_ID) ||
+           ', Employee Num.: ' || S.EMPLOYEE_CODE || ', Plan dates.: ' ||
+           S.PLAN_FROM_DATE || ' to ' || S.PLAN_TO_DATE ||
+           ', Traveling mode.: ' ||
+           (SELECT traveling_mode
+              FROM TGC_EXP_BTA_HEADER
+             WHERE BTA_ID = S.BTA_ID) DESCRIPTION,
            S.OPERATING_UNIT ORG_ID,
            'Acknowledged' ATTRIBUTE1,
            'Service' ATTRIBUTE4,
@@ -54,7 +60,7 @@ create or replace procedure GENRATE_BTR_AP_INVOICE(
            'Imprest Information' ATTRIBUTE_CATEGORY,
            S.BTR_NO ATTRIBUTE9,
            S.CURRENCY_RATE
-    
+
       FROM TGC_EXP_BTR_HEADER S
      WHERE S.APPROVAL_STATUS = 'Approved'
        AND S.BTR_PAYMENT = 'Unpaid'
@@ -63,42 +69,51 @@ create or replace procedure GENRATE_BTR_AP_INVOICE(
   ----------------------------CURSOR ------------------------------------------
 
   CURSOR C_AP_INVOICE_LINE IS
-  
+
     SELECT 'ITEM' LINE_TYPE_LOOKUP_CODE,
            S.ELEMENT_NAME,
            S.TOTAL_AMOUNT,
            '' DIST_CODE_COMBINATION_ID
-      FROM (SELECT TEBL.ELEMENT_NAME, TEBL.TOTAL_AMOUNT
-              FROM TGC_EXP_BTR_LINES TEBL
+      FROM (SELECT TEBL.ELEMENT_NAME,
+                   TEBL.TOTAL_AMOUNT * currency_rate TOTAL_AMOUNT
+              FROM TGC_EXP_BTR_LINES TEBL, TGC_EXP_BTR_HEADER TBR
              WHERE TEBL.BTR_ID = P_BTR_ID
-            
-            UNION
-            
+               AND TEBL.BTR_ID = TBR.BTR_ID
+               and TEBL.TOTAL_AMOUNT > 0
+
+            UNION all
+
             SELECT 'Ex- Gratia', TEBH.EX_GRATIA_AMOUNT
               FROM TGC_EXP_BTR_HEADER TEBH
-             WHERE TEBH.BTR_ID = P_BTR_ID) S;
+             WHERE TEBH.BTR_ID = P_BTR_ID
+               and TEBH.EX_GRATIA_AMOUNT > 0) S;
 
   ----------------------------PROCEDURE FOR CHECK INVOICE AGAINST BTR------------------------------------------
   PROCEDURE CHECK_BTR_IN_INVOICE(PP_ORG IN NUMBER, PP_BTA_NO NUMBER) IS
-  
+
     PP_INVOICE_NUMBER VARCHAR2(200);
   BEGIN
-  
+
     SELECT S.INVOICE_NUM
       INTO PP_INVOICE_NUMBER
       FROM AP_INVOICES_ALL S
      WHERE UPPER(S.ATTRIBUTE_CATEGORY) = UPPER('IMPREST INFORMATION')
        AND S.ATTRIBUTE9 = PP_BTA_NO
-       AND S.ORG_ID = PP_ORG;
-  
+       AND S.ORG_ID = PP_ORG
+       and APPS.Ap_Invoices_Pkg.GET_APPROVAL_STATUS(s.INVOICE_ID,
+                                                    s.INVOICE_AMOUNT,
+                                                    s.PAYMENT_STATUS_FLAG,
+                                                    s.INVOICE_TYPE_LOOKUP_CODE) !=
+           'CANCELLED';
+
     IF SQL%FOUND THEN
       DBMS_OUTPUT.PUT_LINE('UNABLE TO PROCESS YOUR TRANSACTION , BTR IS ALREADY EXIST IN INVOICE: ' ||
                            PP_INVOICE_NUMBER);
       RAISE_APPLICATION_ERROR('-20011',
                               'UNABLE TO PROCESS YOUR TRANSACTION , BTR IS ALREADY EXIST IN INVOICE:' ||
-                              PP_INVOICE_NUMBER);
+                              PP_INVOICE_NUMBER || ' @stop');
     END IF;
-  
+
   EXCEPTION
     WHEN NO_DATA_FOUND THEN
       DBMS_OUTPUT.PUT_LINE('NO DATA FOUND');
@@ -108,14 +123,14 @@ create or replace procedure GENRATE_BTR_AP_INVOICE(
   ----------------------------------FUNCTION FOR FIND CCID---------------------
 
   FUNCTION FIND_CCID(
-                     
+
                      P_PERSON_ID      IN VARCHAR2,
                      P_ORG_ID         IN NUMBER,
                      V_ELEMENT_NAME   IN VARCHAR2,
                      V_MODE_OF_TRAVEL VARCHAR2) RETURN VARCHAR2 IS
     V_CODE VARCHAR2(200);
   BEGIN
-  
+
     SELECT GCC.CODE_COMBINATION_ID
       INTO V_CODE
       FROM GL_CODE_COMBINATIONS_KFV GCC
@@ -125,9 +140,9 @@ create or replace procedure GENRATE_BTR_AP_INVOICE(
                    TIE.NATURAL_ACCOUNT || '.' || TCOW.INTER_UNIT || '.' ||
                    TCOW.FUTURE1 || '.' || TCOW.FUTURE2 ACCNT
               FROM TGC_CCID_OU_WISE TCOW, TGC_IEXPENSES_ELEMENTS TIE
-            
+
              WHERE 1 = 1
-                  
+
                AND TCOW.ORG_ID = P_ORG_ID
                AND DECODE(TIE.SUB_CAT_ID, 7, 'Domestic', 8, 'International') =
                    V_MODE_OF_TRAVEL
@@ -147,9 +162,9 @@ BEGIN
   <<VENDOR_SITE_ID_BLOCK>>
   BEGIN
     SELECT ASS.VENDOR_ID VEN_ID, APSL.VENDOR_SITE_ID, PAAF.PERSON_ID
-    
+
       INTO P_VENDOR_ID, P_VENDOR_SITE_ID, P_PERSON_ID
-    
+
       FROM PER_PEOPLE_X                 PAPF,
            AP_SUPPLIERS                 ASS,
            PER_ORG_STRUCTURE_ELEMENTS_V POSE,
@@ -157,7 +172,7 @@ BEGIN
            HR_ORGANIZATION_UNITS_V      HOUA,
            PER_ALL_ASSIGNMENTS_F        PAAF,
            AP_SUPPLIER_SITES_ALL        APSL
-    
+
      WHERE 1 = 1
        AND PAPF.PERSON_ID = ASS.ATTRIBUTE10
        AND POSE.ORGANIZATION_ID_CHILD = PAAF.ORGANIZATION_ID
@@ -183,21 +198,21 @@ BEGIN
       RAISE_APPLICATION_ERROR('-20011',
                               'UNABLE TO PROCESS YOUR TRANSACTION ,  EMPLOYEE ' ||
                               P_EMP_CODE ||
-                              ' VENDOR SITE IS MARKED AS HOME');
+                              ' VENDOR SITE IS MARKED AS HOME @stop');
   END;
 
   FOR X IN AP_INVOICE_HEADER LOOP
-  
+
     --- EXECUTE PROCEDURE FOR
     --
     CHECK_BTR_IN_INVOICE(X.ORG_ID, X.ATTRIBUTE9);
     --
-  
+
     <<INVOICE_BLOCK>>
     BEGIN
       SELECT AP_INVOICES_INTERFACE_S.NEXTVAL INTO P_INVOICE_ID FROM DUAL;
     END;
-  
+
     INSERT INTO AP_INVOICES_INTERFACE
       (INVOICE_ID,
        INVOICE_NUM,
@@ -250,16 +265,16 @@ BEGIN
        X.ATTRIBUTE9);
     P_INVOICE_NUMBER := X.INVOICE_NUM;
     COMMIT;
-  
+
     FOR APL IN C_AP_INVOICE_LINE LOOP
-    
+
       P_INVOICE_LINE_NO := P_INVOICE_LINE_NO + 1;
-    
+
       CCID_CODE := FIND_CCID(P_PERSON_ID,
                              X.ORG_ID,
                              APL.ELEMENT_NAME,
                              P_TRAVELING_MODE);
-    
+
       INSERT INTO AP_INVOICE_LINES_INTERFACE
         (INVOICE_ID,
          INVOICE_LINE_ID,
@@ -279,18 +294,18 @@ BEGIN
          P_INVOICE_LINE_NO,
          'ITEM',
          SYSDATE,
-         X.DESCRIPTION,
+         X.DESCRIPTION || ' Element Name.: ' || apl.ELEMENT_NAME,
          NULL,
          CCID_CODE, ------------
          X.ORG_ID,
-         ROUND(APL.TOTAL_AMOUNT * X.CURRENCY_RATE, 2),
+         APL.TOTAL_AMOUNT,
          SYSDATE,
          P_USER_ID
-         
+
          );
       DBMS_OUTPUT.PUT_LINE('INVOICE NO ' || P_INVOICE_ID);
     END LOOP;
-  
+
   END LOOP;
 
   -----------------------------------------------------------------------------
@@ -334,9 +349,11 @@ BEGIN
 
   --
 
-  P_string := 'REQUEST SUBMISSION' || 'PROCEDURE COMPLIED SUCCESSFULLY ' ||
-              ' RQ ID' || REQ_ID || ' INVOICE NO: ' || P_INVOICE_NUMBER ||
-              ' INVOICE ID ' || P_INVOICE_ID;
+  P_string := 'REQUEST SUBMISSION';
+
+  /* || 'PROCEDURE COMPLIED SUCCESSFULLY ' ||
+  ' RQ ID' || REQ_ID || ' INVOICE NO: ' || P_INVOICE_NUMBER ||
+  ' INVOICE ID ' || P_INVOICE_ID;
+  */
 
 END;
-/
