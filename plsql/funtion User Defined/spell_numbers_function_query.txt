@@ -1,6 +1,11 @@
 CREATE OR REPLACE FUNCTION spell_number (p_number IN NUMBER)
    RETURN VARCHAR2
 AS
+
+/* spell_number is FUNCTION for convert number to
+WORDS
+
+*/
    TYPE myArray IS TABLE OF VARCHAR2 (255);
 
    l_str myArray
