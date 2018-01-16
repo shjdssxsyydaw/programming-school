@@ -1,0 +1,122 @@
+CREATE OR REPLACE PACKAGE TGC_GLOBAL_HRMS IS
+
+  /*=======================================
+  TGC_GLOBAL_HRMS PACKAGE FOR GET CURRENT
+  TRANSACTIONS OF PERSON / EMPLOYEE
+
+  CREATED BY : FALICK FAISAL
+  CREATE DATE : 16-JAN-2017
+  CLIENT : TREET GROUP OF CORPURATION LAHORE
+  =======================================*/
+
+  --// START
+
+  /*=======================================
+  GET PERSON CURRENT PERSON ASSIGNMENT ID
+
+  =======================================*/
+  FUNCTION GET_ASSIGNMENT_ID(P_PERSON_ID IN VARCHAR2) RETURN NUMBER;
+
+  /*=======================================
+  GET PERSON CURRENT EMPLOYEEMENT CATEGORY
+
+  =======================================*/
+  FUNCTION GET_EMPLOYEE_CAT(P_PERSON_ID IN VARCHAR2) RETURN VARCHAR2;
+
+  /*=======================================
+  CHECK PERSON ID ON THE BASE OF TRANSACTION
+  AND
+  IF PERSON EMPLOYEE CATEGORY IS  MANAGMENT
+  SO RETURN 1 ELSE RETURN 0
+  =======================================*/
+  FUNCTION DIFF_EMPLOYEE_CAT(P_TRANSACTION_ID IN VARCHAR2) RETURN NUMBER;
+
+  /*=======================================
+   --// Get person id  of Current Transaction
+  =======================================*/
+  FUNCTION GET_TRANSACTION_PERSON_ID(P_TRANSACTION_ID IN VARCHAR2)
+    RETURN NUMBER;
+
+END;
+/
+
+/*===================================================PACKAGE BODY ================================================================*/
+
+
+
+CREATE OR REPLACE PACKAGE BODY TGC_GLOBAL_HRMS IS
+
+  /*=======================================
+  TGC_GLOBAL_HRMS PACKAGE FOR GET CURRENT
+  TRANSACTIONS OF PERSON / EMPLOYEE
+
+  CREATED BY : FALICK FAISAL
+  CREATE DATE : 16-JAN-2017
+  CLIENT : TREET GROUP OF CORPURATION LAHORE
+  =======================================*/
+
+  --// START
+  /*=======================================
+  GET PERSON CURRENT PERSON ASSIGNMENT ID
+
+  =======================================*/
+
+  FUNCTION GET_ASSIGNMENT_ID(P_PERSON_ID IN VARCHAR2) RETURN NUMBER IS
+    FL_RESULT NUMBER;
+  BEGIN
+    SELECT PAAF.ASSIGNMENT_ID
+      INTO FL_RESULT
+      FROM PER_ALL_ASSIGNMENTS_F PAAF
+     WHERE PAAF.PERSON_ID = P_PERSON_ID
+       AND SYSDATE BETWEEN PAAF.EFFECTIVE_START_DATE AND
+           PAAF.EFFECTIVE_END_DATE;
+    RETURN FL_RESULT;
+  END;
+
+  /*=======================================
+    GET PERSON CURRENT EMPLOYEEMENT CATEGORY
+
+  =======================================*/
+
+  FUNCTION GET_EMPLOYEE_CAT(P_PERSON_ID IN VARCHAR2) RETURN VARCHAR2 IS
+    FL_RESULT VARCHAR2(200);
+  BEGIN
+    SELECT PAAF.EMPLOYMENT_CATEGORY
+      INTO FL_RESULT
+      FROM PER_ALL_ASSIGNMENTS_F PAAF
+     WHERE PAAF.ASSIGNMENT_ID = GET_ASSIGNMENT_ID(P_PERSON_ID)
+       AND SYSDATE BETWEEN PAAF.EFFECTIVE_START_DATE AND
+           PAAF.EFFECTIVE_END_DATE;
+    RETURN FL_RESULT;
+  END;
+
+  /*=======================================
+  IF PERSON IN MANAGMENT SO RETURN 1 ELSE
+    RETURN 0
+
+  =======================================*/
+  FUNCTION DIFF_EMPLOYEE_CAT(P_TRANSACTION_ID IN VARCHAR2) RETURN NUMBER IS
+  BEGIN
+    IF GET_EMPLOYEE_CAT(GET_TRANSACTION_PERSON_ID(P_TRANSACTION_ID)) IN
+       ('CONT_M', 'PER_M', 'PRO_M') THEN
+      RETURN 1;
+    ELSE
+      RETURN 0;
+    END IF;
+  END;
+
+  /*=======================================
+   --// Get person id  of Current Transaction
+  =======================================*/
+  FUNCTION GET_TRANSACTION_PERSON_ID(P_TRANSACTION_ID IN VARCHAR2)
+    RETURN NUMBER IS
+    FL_RESULT NUMBER;
+  BEGIN
+    SELECT S.SELECTED_PERSON_ID
+      INTO FL_RESULT
+      FROM HR_API_TRANSACTIONS S
+     WHERE S.TRANSACTION_ID = P_TRANSACTION_ID;
+    RETURN FL_RESULT;
+  END;
+
+END;

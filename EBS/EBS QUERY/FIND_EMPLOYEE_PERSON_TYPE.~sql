@@ -1,8 +1,14 @@
+/*=====================================
+QUERY FOR FIND EMPLOYEE PERSON_TYPE
+"MANAGMENT OR NON MANAGMENT" ON THE
+ BASE OF  PERSON_ID 
+=====================================*/
+
 SELECT          PAPF.PERSON_ID,
                 PAPF.EMPLOYEE_NUMBER,
                 PAPF.FULL_NAME,
                 PPT.USER_PERSON_TYPE        PERSON_TYPE
-                ,PPT.SYSTEM_PERSON_TYPE   
+                ,PPT.SYSTEM_PERSON_TYPE
         FROM
                 PER_PERSON_TYPE_USAGES_F    PTYPE,
                 PER_PERSON_TYPES            PPT,
