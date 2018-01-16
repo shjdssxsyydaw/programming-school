@@ -1,82 +1,83 @@
+
 DECLARE
 
   /* LOCAL VARIABLE */
   L_LEAVE_EXITS NUMBER;
- 
+
   /*
    DEFUALT VARIABLE FOR ABSENCE_ATTENDANCE_TYPE
-   2076 IS ABSENCE_ATTENDANCE_TYPE_ID OF  AUTO ABSENCE MANAGMENT 
+   2076 IS ABSENCE_ATTENDANCE_TYPE_ID OF  AUTO ABSENCE MANAGMENT
   */
-  
+
   DL_ABSENCE_ID NUMBER:=2076;
-  
+
       /* CURSOR:
-         GET ALL AUTO ABSENCE LEAVE  
+         GET ALL AUTO ABSENCE LEAVE
          */
-      
-          CURSOR C_PAA IS 
-            SELECT 
+
+          CURSOR C_PAA IS
+            SELECT
                  paa.ABSENCE_ATTENDANCE_ID,
                  paa.person_id,
                  paa.object_version_number,
                  paa.DATE_START
-                        
-            from 
+
+            from
                  per_absence_attendances    paa
-                 
+
            WHERE 1 = 1
-           
+
              and paa.absence_attendance_type_id = DL_ABSENCE_ID
              and paa.PERSON_ID = 62;
-     
+
      /*
-     FUNCTION FOR CHECK LEAVE  THAT IS ENTERED AGAINST  "AUTO ABSENCE LEAVE"   
-     PARAMETERS :  PERSON ID 
-                :  AUTO ABSENCE LEAVE  START DATE 
+     FUNCTION FOR CHECK LEAVE  THAT IS ENTERED AGAINST  "AUTO ABSENCE LEAVE"
+     PARAMETERS :  PERSON ID
+                :  AUTO ABSENCE LEAVE  START DATE
 
      DESCRIPTION :
-                 AUTO ABSENCE LEAVE IS MARKED AUTOMATICLLY. SO START DATE AND END DATE IS SAME 
+                 AUTO ABSENCE LEAVE IS MARKED AUTOMATICLLY. SO START DATE AND END DATE IS SAME
      */
-     
+
            FUNCTION CHECK_ABSENCE(FL_DATE DATE,FL_PERSON_ID NUMBER )
              RETURN VARCHAR2
-             IS 
+             IS
              FL_LEAVE_EXITS NUMBER;
-             BEGIN 
+             BEGIN
 
-                SELECT 
+                SELECT
                           COUNT(*)
-                  INTO    FL_LEAVE_EXITS              
-                  from 
+                  INTO    FL_LEAVE_EXITS
+                  from
                        per_absence_attendances    paa
-                         
+
                  WHERE 1 = 1
-                   
+
                    and paa.absence_attendance_type_id != DL_ABSENCE_ID
                    and paa.PERSON_ID = FL_PERSON_ID
                    AND FL_DATE BETWEEN PAA.DATE_START AND PAA.DATE_END;
-                  
-                 RETURN FL_LEAVE_EXITS;
-                 
-             END;  
-     
-     
-    
-BEGIN 
 
-   FOR X IN C_PAA LOOP 
-       
-       /* 
+                 RETURN FL_LEAVE_EXITS;
+
+             END;
+
+
+
+BEGIN
+
+   FOR X IN C_PAA LOOP
+
+       /*
          FUNCTION CHECK_ABSENCE(DATE_START =>  START DATE  DATE DATATYPE , PERSON_ID  =>  PERSON ID );
        */
        L_LEAVE_EXITS:=CHECK_ABSENCE(X.DATE_START,X.PERSON_ID);
-       
-       
-       IF L_LEAVE_EXITS > 0 THEN 
+
+
+       IF L_LEAVE_EXITS > 0 THEN
          hr_person_absence_api.delete_person_absence(  FALSE, X.absence_attendance_id,    X.object_version_number);
        END IF;
-       
+
    END LOOP;
 
-   
+
 END;
