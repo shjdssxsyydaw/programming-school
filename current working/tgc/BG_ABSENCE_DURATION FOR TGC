@@ -1,0 +1,97 @@
+/*
+FORMULA NAME: TEMPLATE_ABSENCE_DURATION
+FORMULA TYPE: Quickpaint
+DESCRIPTION:  Calculates the Employee's Absence
+              Duration in days or hours. The profile
+              'HR: Absence Duration Auto Overwrite'
+              determines if an existing duration value
+              can change automatically or not.
+
+/* Main Body of Formula */
+INPUTS ARE days_or_hours(text),
+           date_start (date),
+           date_end (date),
+
+           time_start (text),
+           time_end (text),
+           ABS_INFORMATION_CATEGORY (text),
+           ABS_INFORMATION1 (text),
+           ABS_INFORMATION2 (text),
+           ABS_INFORMATION3 (text),
+           ABS_INFORMATION4 (text),
+           ABS_INFORMATION5 (text),
+           ABS_INFORMATION6 (text),
+           ABSENCE_ATTENDANCE_TYPE_ID (NUMBER)
+
+
+/* default values */
+DEFAULT FOR days_or_hours IS 'D'
+DEFAULT FOR time_start IS '09:00'
+DEFAULT FOR time_end IS '17:00'
+DEFAULT FOR date_start IS '0001/01/01 00:00:00' (DATE)
+DEFAULT FOR date_end IS '4712/12/31 00:00:00' (DATE)
+DEFAULT FOR ABS_INFORMATION_CATEGORY IS ' '
+DEFAULT FOR ABS_INFORMATION1 IS ' '
+DEFAULT FOR ABS_INFORMATION2 IS ' '
+DEFAULT FOR ABS_INFORMATION3 IS ' '
+DEFAULT FOR ABS_INFORMATION4 IS ' '
+DEFAULT FOR ABS_INFORMATION5 IS ' '
+DEFAULT FOR ABS_INFORMATION6 IS ' '
+
+/* database items */
+DEFAULT FOR asg_start_time IS '09:00'
+DEFAULT FOR asg_end_time IS '17:00'
+DEFAULT FOR asg_pos_start_time IS '09:00'
+DEFAULT FOR asg_pos_end_time IS '17:00'
+
+/* local variables */
+error_or_warning = ' '
+invalid_msg = ' '
+duration = '0'
+number_of_days =0
+
+/*==============================*/
+
+
+  duration=TGC_BG_ABS_DURATION(ABSENCE_ATTENDANCE_TYPE_ID,date_start,date_end,time_start,time_end,invalid_msg,number_of_days)
+  /*
+TGC_ABSENCE_LEAVE_VALIDATIONS FUNCTION VALIDATIONS
+
+'ERI'; --- EMPLOYEE PRESENT DAY INCLUEDED
+
+'EHI'; --- EMPLOYEE HOLIDAY DAY INCLUEDED
+
+'EPI'; --- EMPLOYEE PRESENT DAY INCLUEDED
+
+*/
+
+
+
+IF  TGC_ABSENCE_LEAVE_VALIDATIONS(to_char(date_start,'DD-MON-YYYY'),to_char(date_END,'DD-MON-YYYY'),ABSENCE_ATTENDANCE_TYPE_ID)= 'ERI'  AND (number_of_days < 3 )
+THEN
+        (
+        duration = 'FAILED'
+        invalid_msg = 'You cannot enter leave for Rest Day'
+        )
+
+IF  TGC_ABSENCE_LEAVE_VALIDATIONS(to_char(date_start,'DD-MON-YYYY'),to_char(date_END,'DD-MON-YYYY'),ABSENCE_ATTENDANCE_TYPE_ID)= 'EHI'
+THEN
+        (
+        duration = 'FAILED'
+        invalid_msg =  'You cannot enter leave for Holiday Day'
+        )
+
+IF  TGC_ABSENCE_LEAVE_VALIDATIONS(to_char(date_start,'DD-MON-YYYY'),to_char(date_END,'DD-MON-YYYY'),ABSENCE_ATTENDANCE_TYPE_ID)='EPI' AND number_of_days !=0
+THEN
+        (
+        duration = 'FAILED'
+        invalid_msg = 'You cannot enter leave for a Day , that is marked as Present In OTL- Time Card'
+        )
+
+
+
+
+
+
+
+return duration, invalid_msg
