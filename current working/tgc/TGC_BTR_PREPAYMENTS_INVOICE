@@ -1,0 +1,167 @@
+CREATE OR REPLACE TRIGGER TGC_BTR_PREPAYMENTS_INVOICE
+  AFTER INSERT OR UPDATE ON "AP"."AP_INVOICE_LINES_ALL#"
+  REFERENCING NEW AS New OLD AS Old
+  for each row
+
+DECLARE
+  PRE_AMOUNT              NUMBER;
+  PRE_PAYMENT_BTA_INVOICE VARCHAR2(200);
+  PRE_PAYMENT_BTA_DATE    DATE;
+  V_org_id                number;
+  v_BTR_NUM               NUMBER;
+  AIA_L_AMOUNT            NUMBER;
+
+BEGIN
+
+  /* apply prepayments of bta on btr */
+
+  IF :NEW.PREPAY_INVOICE_ID IS NOT NULL AND
+     NVL(:NEW.discarded_flag, 'N') != 'Y' AND
+     :NEW.line_type_lookup_code = 'PREPAY' THEN
+
+    <<INNER_BLOCK>>
+    BEGIN
+      SELECT AIA.INVOICE_NUM, AIA.INVOICE_DATE, INVOICE_AMOUNT
+        INTO PRE_PAYMENT_BTA_INVOICE, PRE_PAYMENT_BTA_DATE, PRE_AMOUNT
+        FROM AP_INVOICES_ALL AIA
+       WHERE AIA.INVOICE_ID = :NEW.PREPAY_INVOICE_ID;
+
+      SELECT aia.attribute9, aia.ORG_ID, INVOICE_AMOUNT
+        INTO v_BTR_NUM, V_org_id, AIA_L_AMOUNT
+        FROM AP_INVOICES_ALL AIA
+       WHERE AIA.ATTRIBUTE_CATEGORY = 'Imprest Information'
+         and aia.source = 'BTR_INV'
+         and aia.invoice_id = :new.invoice_id;
+
+      IF PRE_AMOUNT = AIA_L_AMOUNT THEN
+        UPDATE tgc_exp_btr_header
+           SET BTR_PAYMENT = 'Adjusted against Advance'
+         WHERE operating_unit = V_org_id
+           AND BTR_NO = v_BTR_NUM;
+      END IF;
+
+      ---------------------------------------------------
+    EXCEPTION
+      WHEN OTHERS THEN
+        NULL;
+    END;
+
+    -------------------------------------------------------------------------------------------------
+
+    -------------------------------------------------------------------------------------------------
+    <<Application_no>>
+    DECLARE
+      V_BTR_ID NUMBER;
+
+      V_LOAN_APP VARCHAR2(200);
+      V_DATE     DATE;
+    BEGIN
+
+      select DISTINCT TBR.BTR_ID, INVOICE_AMOUNT
+        INTO V_BTR_ID, PRE_AMOUNT
+        from tgc_exp_bta_header TBA,
+             tgc_exp_btr_header TBR,
+             AP_INVOICES_ALL    AIA
+       WHERE 1 = 1
+         AND TBA.BTA_ID = TBR.BTA_ID
+         AND AIA.ORG_ID = TBA.OPERATING_UNIT
+         AND TBR.MIX_INVOICE_NO = aia.invoice_num
+         AND TBR.Approval_STATUS = 'Approved'
+         and TBR.APPLICATION_STATUS != 'Cancle'
+         and aia.invoice_id = :NEW.PREPAY_INVOICE_ID;
+
+      if V_BTR_ID IS NOT NULL THEN
+
+        select distinct PLA.LOAN_APPLICATION_ID, PLA.LOAN_APPLICATION_DATE
+          INTO V_LOAN_APP, V_DATE
+
+          from ap_invoice_distributions_all aida, PF_LOAN_APPLICATION PLA
+         where 1 = 1
+           and aida.attribute_category = 'Employee Details'
+           and aida.ATTRIBUTE2 is not null
+           AND PLA.LOAN_APPLICATION_ID = aida.ATTRIBUTE2
+           AND AIDA.INVOICE_ID = :NEW.INVOICE_ID;
+
+        UPDATE TGC_EXP_BTR_HEADER S
+           SET S.OTF_APPLICATION_NO   = V_LOAN_APP,
+               S.OTF_APPLICATION_DATE = V_DATE
+         WHERE BTR_ID = V_BTR_ID;
+
+        <<OTF_INVOICE_NUMBER>>
+        DECLARE
+          V_OTF_INVOICE VARCHAR2(200);
+          V_OTF_DATE    DATE;
+        BEGIN
+          SELECT S.INVOICE_NUM, S.INVOICE_DATE
+            INTO V_OTF_INVOICE, V_OTF_DATE
+            FROM AP_INVOICES_ALL S
+           WHERE S.INVOICE_ID = :NEW.INVOICE_ID;
+
+          UPDATE TGC_EXP_BTR_HEADER S
+             SET S.EXC_INVOICE_NUMBER = V_OTF_INVOICE,
+                 S.EXC_INVOICE_NUMBER = V_OTF_DATE
+           WHERE BTR_ID = V_BTR_ID;
+        END;
+
+      END IF;
+
+    EXCEPTION
+      WHEN OTHERS THEN
+        NULL;
+
+    END;
+
+    <<Application_mixed_NO>>
+  ---WHEN mixed invoices APPLY ON INVOICE THEN QUERY WILL
+    DECLARE
+
+      V_BTR_ID           NUMBER;
+      V_INV_NO           VARCHAR2(200);
+      V_DATE             DATE;
+      V_GL_DATE          DATE;
+      TIL_INVOICE_NUMBER AP_INVOICES_ALL.INVOICE_NUM%TYPE;
+    BEGIN
+
+      select DISTINCT TBR.BTR_ID, INVOICE_AMOUNT, INVOICE_NUM
+        INTO V_BTR_ID, PRE_AMOUNT, TIL_INVOICE_NUMBER
+        from tgc_exp_bta_header TBA,
+             tgc_exp_btr_header TBR,
+             AP_INVOICES_ALL    AIA
+       WHERE 1 = 1
+         AND TBA.BTA_ID = TBR.BTA_ID
+         AND AIA.ORG_ID = TBA.OPERATING_UNIT
+         AND TBR.MIX_INVOICE_NO = aia.invoice_num
+         AND TBR.Approval_STATUS = 'Approved'
+         and TBR.APPLICATION_STATUS != 'Cancle'
+         and aia.invoice_id = :NEW.PREPAY_INVOICE_ID;
+
+      if V_BTR_ID IS NOT NULL THEN
+
+        select s.INVOICE_NUM, S.INVOICE_DATE, S.GL_DATE, INVOICE_AMOUNT
+          INTO V_INV_NO, V_DATE, V_GL_DATE, AIA_L_AMOUNT
+          from ap_invoices_all s
+         where s.INVOICE_TYPE_LOOKUP_CODE = 'MIXED'
+           AND INVOICE_ID = :NEW.INVOICE_ID;
+
+        UPDATE TGC_EXP_BTR_HEADER S
+           SET S.EXC_INVOICE_NUMBER = V_INV_NO, S.EXC_INVOICE_DATE = V_DATE
+        -- EXC_PAYMENT_NUMBER   = TIL_INVOICE_NUMBER
+         WHERE BTR_ID = V_BTR_ID;
+
+        IF PRE_AMOUNT = AIA_L_AMOUNT THEN
+          UPDATE tgc_exp_btr_header
+             SET BTR_PAYMENT = 'Adjusted against Advance'
+           WHERE BTR_ID = V_BTR_ID;
+        END IF;
+
+      END IF;
+
+    EXCEPTION
+      WHEN OTHERS THEN
+        NULL;
+
+    END;
+
+  END IF;
+
+END;
