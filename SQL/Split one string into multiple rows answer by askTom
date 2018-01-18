@@ -1,3 +1,77 @@
+/*
+
+About Oracle WITH clause
+Starting in Oracle9i release 2 we see an incorporation of the SQL-99 WITH clause (a.k.a. subquery factoring), a tool for materializing subqueries.  Oracle offers three types of materialization, each with its own type and duration:
+
+- Global Temporary Tables - The table definition is permanent.
+- Materialized Views - The definition and the data are permanent.
+- The WITH clause - The materialized subquery data is persistent through the query.
+
+Also see these important related SQL tuning tools:
+
+temp_undo_enabled Tips
+Hypercharging SQL by restructuring complex queries using intermediate results
+How to re-write complex SQL using the WITH clause.
+The SQL WITH clause is very similar to the use of Global temporary tables (GTT), a technique that is often used to improve query speed for complex subqueries. Here are some important notes about the Oracle "WITH clause":
+
+   • The SQL WITH clause only works on Oracle 9i release 2 and beyond.
+   • Formally, the WITH clause is called subquery factoring
+   • The SQL WITH clause is used when a subquery is executed multiple times
+   • Also useful for recursive queries (SQL-99, but not Oracle SQL)
+
+To keep it simple, the following example only references the aggregations once, where the SQL WITH clause is normally used when an aggregation is referenced multiple times in a query.
+
+The WITH clause to simplify complex SQL
+We can also use the SQL-99 WITH clause instead of temporary tables. The Oracle SQL WITH clause will compute the aggregation once, give it a name, and allow us to reference it (maybe multiple times), later in the query.
+
+The SQL-99 WITH clause is very confusing at first because the SQL statement does not begin with the word SELECT. Instead, we use the WITH clause to start our SQL query, defining the aggregations, which can then be named in the main query as if they were "real" tables:
+
+WITH
+subquery_name
+AS
+(the aggregation SQL statement)
+SELECT
+(query naming subquery_name);
+
+Retuning to our oversimplified example, let's replace the temporary tables with the SQL WITH  clause (Note:  You may find a faster execution plan by using Global Temporary tables, depending on your release of Oracle):
+
+WITH
+sum_sales AS
+  ( select /*+ materialize */
+    sum(quantity) all_sales from stores ),
+number_stores AS
+  ( select /*+ materialize */
+    count(*) nbr_stores from stores ),
+sales_by_store AS
+  ( select /*+ materialize */
+  store_name, sum(quantity) store_sales from
+  store natural join sales )
+SELECT
+   store_name
+FROM
+   store,
+   sum_sales,
+   number_stores,
+   sales_by_store
+where
+   store_sales > (all_sales / nbr_stores);
+
+Note the use of the Oracle undocumented "materialize" hint in the WITH clause. The Oracle materialize hint is used to ensure that the Oracle cost-based optimizer materializes the temporary tables that are created inside the WITH clause. This is not necessary in Oracle10g, but it helps ensure that the tables are only created one time.
+
+It should be noted that the WITH clause is not yet fully-functional within Oracle SQL and it does not yet support the use of WITH clause replacement for "CONNECT BY" when performing recursive queries.
+
+Note this page where we see a benchmark showing the difference in performance of complex SQL subqueries rewritten with intermediate tables.
+
+Oracle 12c WITH clause enhancements
+Starting in Oracle 12c you can use the "create function" syntax within a WITH clause declaration.  This means that you can not only declare an intermediate data set you can also associate intermediate data with a PL/SQL function.
+
+Oracle12c temporary table enhancements
+Prior to Oracle12c, Oracle transactions used UNDO for temporary tables (WITH Clause materializations, global temporary tables) within the standard UNDO tablespace.  Now, you can specify "alter session set temp_undo_enabled=true" to force the UNDO to be managed within the TEMP tablespace instead of within the UNDO tablespace.  This reduced the content of "regular" UNDO allowing for faster flashback operations.  Oracle has also allowed "private optimizer statistics" for global temporary tables, instead of the Oracle 11g method in which everybody shared a single set of statistics.
+
+
+
+*/
+
 with rws as (
   select level x from dual
   connect by level <= 10

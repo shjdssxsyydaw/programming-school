@@ -1,0 +1,4 @@
+A vendor-specific number that is mapped to an error code before it is stored in a variable named SQLCODE.
+The RAISE_APPLICATION_ERROR procedure accepts user-defined error-number values from -20000 to -20999.
+The SQLCODE that is returned in the error message is SQL0438N.
+Raise application error (PL/SQL) - IBM

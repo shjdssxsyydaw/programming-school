@@ -1,0 +1,18 @@
+Syntax
+The syntax for the LPAD function in Oracle/PLSQL is:
+
+LPAD( string1, padded_length [, pad_string] )
+Parameters or Arguments
+string1
+The string to pad characters to (the left-hand side).
+padded_length
+The number of characters to return. If the padded_length is smaller than the original string, the LPAD function will truncate the string to the size of padded_length.
+pad_string
+Optional. This is the string that will be padded to the left-hand side of string1. If this parameter is omitted, the LPAD function will pad spaces to the left-side of string1.
+Returns
+The LPAD function returns a string value.
+
+
+--// LPAD
+     ----
+select Lpad('A', 20, 'a1') str from dual

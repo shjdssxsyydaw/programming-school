@@ -1,0 +1,2 @@
+select chr( ascii('A')+level-1 ) letter from dual
+connect by level <= 26;
