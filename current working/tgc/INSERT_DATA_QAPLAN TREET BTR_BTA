@@ -1,0 +1,192 @@
+create or replace procedure INSERT_DATA_QAPLAN(p_bta_id number,
+                                               V_STATUS OUT VARCHAR2) is
+
+  -- CURSOR get_details IS
+
+  l_user_id       NUMBER := FND_PROFILE.VALUE('USER_ID');
+  l_plan_id       QA_PLANS_V.plan_id%TYPE;
+  ln_request_id   NUMBER;
+  l_collection_id NUMBER;
+  l_return        BOOLEAN;
+  l_phase         VARCHAR2(100);
+  l_status        VARCHAR2(100);
+  l_return_status VARCHAR2(100);
+  l_dev_phase     VARCHAR2(100);
+  l_dev_status    VARCHAR2(100);
+  l_message       VARCHAR2(100);
+  request_id      number;
+  v_req_id        NUMBER;
+  v_result        VARCHAR2(200);
+  v_count         number;
+
+  VENDOR_ID        NUMBER;
+  VENDOR_NAME      VARCHAR2(200);
+  EMPLOYEE_NUMBER  VARCHAR2(200);
+  bta_no           NUMBER;
+  IOU_AMOUNT       NUMBER;
+  APPLICATION_DATE date;
+  OPERATING_UNIT   number;
+  ORG              VARCHAR2(300);
+  GLOBAL_DAYS      NUMBER NOT NULL DEFAULT 0;
+BEGIN
+  --=============================================================================
+  --// GLOABL DAYS FOR QUAILTY PLAN EXPIRY DATE
+  BEGIN
+    SELECT GLOBAL_VALUE
+      INTO GLOBAL_DAYS
+      FROM FF_GLOBALS_F F
+     WHERE SYSDATE BETWEEN F.EFFECTIVE_START_DATE AND F.EFFECTIVE_END_DATE
+       AND F.GLOBAL_NAME = 'QUAILTY_PLAN_EXPIRY_DAYS';
+  EXCEPTION
+    WHEN OTHERS THEN
+      NULL;
+  END;
+  --+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  select ASP.VENDOR_ID,
+         ASP.VENDOR_NAME,
+         PAPF.EMPLOYEE_NUMBER,
+         tebh.bta_no,
+         TEBH.IOU_AMOUNT,
+         TEBH.To_Date + GLOBAL_DAYS APPLICATION_DATE,
+         TEBH.OPERATING_UNIT,
+         HAOU.NAME ORG
+    into VENDOR_ID,
+         VENDOR_NAME,
+         EMPLOYEE_NUMBER,
+         bta_no,
+         IOU_AMOUNT,
+         APPLICATION_DATE,
+         OPERATING_UNIT,
+         ORG
+    from AP_SUPPLIERS              asp,
+         per_all_people_f          papf,
+         TGC_EXP_BTA_HEADER        TEBH,
+         HR_ALL_ORGANIZATION_UNITS HAOU
+   where 1 = 1
+
+     and sysdate between papf.EFFECTIVE_START_DATE and
+         papf.EFFECTIVE_END_DATE
+     AND HAOU.ORGANIZATION_ID = TEBH.OPERATING_UNIT
+     AND TEBH.EMPLOYEE_CODE = PAPF.EMPLOYEE_NUMBER
+     AND TEBH.IOU_AMOUNT IS NOT NULL
+     AND UPPER(TEBH.APPROVAL_STATUS) = 'APPROVED'
+     AND PAPF.PERSON_ID = asp.attribute10
+     and tebh.BTA_id = p_bta_id
+   order by vendor_name;
+
+  SELECT QA_COLLECTION_ID_S.NEXTVAL INTO l_collection_id FROM DUAL;
+
+  SELECT plan_id
+    INTO l_plan_id
+    FROM QA_PLANS_V
+   WHERE name = 'CASH IMPREST CONTROL BASE';
+
+  select count(*)
+    into v_count
+    from qa_results
+   where PLAN_ID = 33166
+     and CHARACTER10 = bta_no
+     and CHARACTER3 = OPERATING_UNIT;
+
+  if v_count = 0 then
+    --   FOR get_dtls IN get_details
+    -- LOOP
+    INSERT INTO qa_results_interface
+      (transaction_interface_id,
+       organization_code,
+       plan_name,
+       process_status,
+       insert_type,
+       plan_id,
+       collection_id,
+       last_update_date,
+       last_updated_by,
+       qa_last_updated_by,
+       transaction_date,
+       character1,
+       character2,
+       character3,
+       character4,
+       character5,
+       character6,
+       character7,
+       character8,
+       character9,
+       CHARACTER10)
+    VALUES
+      (QA_RESULTS_UPDATE_HISTORY_S.nextval,
+       'TMO',
+       'CASH IMPREST CONTROL BASE',
+       1,
+       1,
+       l_plan_id --
+      ,
+       l_collection_id,
+       SYSDATE,
+       l_user_id,
+       l_user_id,
+       SYSDATE,
+       'ONE TIME',
+       ORG,
+       OPERATING_UNIT,
+       VENDOR_NAME,
+       VENDOR_ID,
+       NULL,
+       NULL,
+       IOU_AMOUNT,
+       APPLICATION_DATE,
+       bta_no);
+
+    V_STATUS := ' BTA Approved';
+    COMMIT;
+
+    /*
+    // GLOBAL VARIABLES
+
+
+     fnd_global.apps_initialize(fnd_profile.VALUE ('user_id'),
+       fnd_profile.VALUE ('resp_appl_id'),
+                                 fnd_profile.VALUE ('resp_id'))
+
+
+    */
+
+    begin
+      ---/// USER ID + RESP ID + APPLICATION RESP ID
+      fnd_global.apps_initialize(fnd_profile.VALUE('user_id'), 20561, 250);
+
+      --- Submitting Report (Report execution)
+      v_req_id := apps.fnd_request.submit_request('QA',
+                                                  'QLTTRAMB', ---  'RUBA_OM_DN_ATTACHMENT',
+                                                  NULL,
+                                                  SYSDATE,
+                                                  FALSE,
+                                                  '200',
+                                                  1,
+                                                  fnd_profile.value('USER_ID'),
+                                                  'Yes'
+
+                                                  );
+      fnd_file.PUT_LINE(fnd_file.OUTPUT,
+                        'Request Submitted : ' || v_req_id);
+
+      COMMIT;
+    exception
+      when others then
+        fnd_file.PUT_LINE(fnd_file.OUTPUT, ' - Error: - ' || sqlerrm);
+
+    END;
+
+  else
+
+    UPDATE qa_results
+       SET CHARACTER8 = IOU_AMOUNT
+     WHERE CHARACTER10 = bta_no
+       and PLAN_ID = 33166
+       AND CHARACTER3 = OPERATING_UNIT;
+    COMMIT;
+    V_STATUS := ' BTA Approved!';
+
+  end if;
+
+end INSERT_DATA_QAPLAN;
