@@ -1,19 +1,16 @@
 /* TABLE */
 -- Create table
-create table CUST_UNIT_TESTING
+create table ut_plsql_table
 (
   test_id          NUMBER,
   test_name        VARCHAR2(3000),
-  test_values      VARCHAR2(200),
+  test_values      VARCHAR2(2000),
   program_name     VARCHAR2(3000),
   sub_program_name VARCHAR2(3000),
   test_date        DATE,
   test_user_id     VARCHAR2(200)
 )
 
-/*
-=====PACKAGE=====
-*/
 
 CREATE OR REPLACE PACKAGE UT_PLSQL_PKG
 
@@ -51,9 +48,8 @@ CREATE OR REPLACE PACKAGE UT_PLSQL_PKG
 END;
 
 
+
 =========================================BODY/
-
-
 
 
 
@@ -91,9 +87,9 @@ CREATE OR REPLACE PACKAGE BODY UT_PLSQL_PKG IS
 
     SELECT NVL(MAX(CUT.TEST_ID), 0) + 1 TEST_ID
       INTO P_TEST_ID
-      FROM CUST_UNIT_TESTING CUT;
+      FROM ut_plsql_table cut;
 
-    INSERT INTO CUST_UNIT_TESTING
+    INSERT INTO ut_plsql_table
     VALUES
       (P_TEST_ID,
        P_TEST_NAME,
@@ -110,10 +106,10 @@ CREATE OR REPLACE PACKAGE BODY UT_PLSQL_PKG IS
   ==========================*/
   PROCEDURE DISPLAY_TEST(P_TEST_ID IN NUMBER) is
     --//ROW TYPE
-    CUST_UNIT_TESTING_T CUST_UNIT_TESTING%ROWTYPE;
+    TESTING_T ut_plsql_table%ROWTYPE;
 
     CURSOR TEST_C IS
-      SELECT * FROM CUST_UNIT_TESTING CUT WHERE CUT.TEST_ID = P_TEST_ID;
+      SELECT * FROM ut_plsql_table cut WHERE CUT.TEST_ID = P_TEST_ID;
 
   BEGIN
     --// OPEN
@@ -122,21 +118,19 @@ CREATE OR REPLACE PACKAGE BODY UT_PLSQL_PKG IS
     --// FETCH
 
     FETCH TEST_C
-      INTO CUST_UNIT_TESTING_T;
+      INTO TESTING_T;
 
     IF TEST_C%FOUND THEN
-      DBMS_OUTPUT.put_line('Test name : ' || CUST_UNIT_TESTING_T.test_name);
-      DBMS_OUTPUT.put_line('Test Values : ' ||
-                           CUST_UNIT_TESTING_T.test_values);
+      DBMS_OUTPUT.put_line('Test name : ' || TESTING_T.test_name);
+      DBMS_OUTPUT.put_line('Test Values : ' || TESTING_T.test_values);
       DBMS_OUTPUT.put_line('------------------------------------------------------------------');
-      DBMS_OUTPUT.put_line('Program Sequance : ' ||
-                           CUST_UNIT_TESTING_T.program_name);
+      DBMS_OUTPUT.put_line('Program Sequance : ' || TESTING_T.program_name);
       DBMS_OUTPUT.put_line('------------------------------------------------------------------');
       DBMS_OUTPUT.put_line('Error Program Sequance : ' ||
-                           CUST_UNIT_TESTING_T.sub_program_name);
+                           TESTING_T.sub_program_name);
       DBMS_OUTPUT.put_line('------------------------------------------------------------------');
-      DBMS_OUTPUT.put_line('User : ' || CUST_UNIT_TESTING_T.test_user_id);
-      DBMS_OUTPUT.put_line('User : ' || CUST_UNIT_TESTING_T.test_date);
+      DBMS_OUTPUT.put_line('User : ' || TESTING_T.test_user_id);
+      DBMS_OUTPUT.put_line('User : ' || TESTING_T.test_date);
     ELSE
       DBMS_OUTPUT.put_line('------------------------------------------------------------------');
       DBMS_OUTPUT.put_line('Invalid Test id');
@@ -153,7 +147,7 @@ CREATE OR REPLACE PACKAGE BODY UT_PLSQL_PKG IS
   ==========================*/
   PROCEDURE DELETE_TEST IS
   BEGIN
-    DELETE FROM CUST_UNIT_TESTING;
+    DELETE FROM ut_plsql_table;
   END;
 
 END;
