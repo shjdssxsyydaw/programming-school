@@ -30,6 +30,8 @@ BEGIN
          BTR_PAYMENT         = 'Paid'
    WHERE BTR_ID = v_btr_id;
 
-
+EXCEPTION
+  WHEN OTHERS THEN
+    NULL;
 
 END;

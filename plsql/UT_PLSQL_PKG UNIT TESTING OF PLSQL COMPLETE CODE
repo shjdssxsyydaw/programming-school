@@ -1,0 +1,159 @@
+/* TABLE */
+-- Create table
+create table CUST_UNIT_TESTING
+(
+  test_id          NUMBER,
+  test_name        VARCHAR2(3000),
+  test_values      VARCHAR2(200),
+  program_name     VARCHAR2(3000),
+  sub_program_name VARCHAR2(3000),
+  test_date        DATE,
+  test_user_id     VARCHAR2(200)
+)
+
+/*
+=====PACKAGE=====
+*/
+
+CREATE OR REPLACE PACKAGE UT_PLSQL_PKG
+
+ IS
+
+  /*====================
+  GET PROGRAM NAME THAT CALLED
+  ==========================*/
+  FUNCTION GET_PROGRAM RETURN VARCHAR2;
+
+  /*====================
+  GET PROGRAM NAME THAT HAVE ERROR
+  ==========================*/
+  FUNCTION GET_ERROR_PROGRAM RETURN VARCHAR2;
+
+  /*====================
+  INSERT DATA INTO TESTING TABLE
+  CUST_UNIT_TESTING
+  ==========================*/
+  PROCEDURE NEW_TEST(P_TEST_NAME    IN VARCHAR2,
+                     P_VALUES       IN VARCHAR2,
+                     P_PROGRAM_NAME IN VARCHAR2,
+                     P_ERROR        IN VARCHAR2);
+
+  /*====================
+  DISPLAY TEST
+  ==========================*/
+  PROCEDURE DISPLAY_TEST(P_TEST_ID IN NUMBER);
+
+  /*====================
+  DISPLAY TEST
+  ==========================*/
+  PROCEDURE DELETE_TEST;
+
+END;
+
+
+=========================================BODY/
+
+
+
+
+
+CREATE OR REPLACE PACKAGE BODY UT_PLSQL_PKG IS
+
+  /*====================
+  GET PROGRAM NAME THAT CALLED
+  ==========================*/
+  FUNCTION GET_PROGRAM RETURN VARCHAR2 IS
+
+  BEGIN
+    RETURN DBMS_UTILITY.FORMAT_CALL_STACK;
+  END;
+
+  /*====================
+  GET PROGRAM NAME THAT HAVE ERROR
+  ==========================*/
+  FUNCTION GET_ERROR_PROGRAM RETURN VARCHAR2 is
+  begin
+    return DBMS_UTILITY.FORMAT_ERROR_BACKTRACE;
+  end;
+
+  /*====================
+  INSERT DATA INTO TESTING TABLE
+  CUST_UNIT_TESTING
+  ==========================*/
+  PROCEDURE NEW_TEST(P_TEST_NAME    IN VARCHAR2,
+                     P_VALUES       IN VARCHAR2,
+                     P_PROGRAM_NAME IN VARCHAR2,
+                     P_ERROR        IN VARCHAR2) IS
+    P_TEST_ID   NUMBER;
+    P_TEST_DATE DATE := SYSDATE;
+    P_USER_ID   VARCHAR2(200) := USER;
+  BEGIN
+
+    SELECT NVL(MAX(CUT.TEST_ID), 0) + 1 TEST_ID
+      INTO P_TEST_ID
+      FROM CUST_UNIT_TESTING CUT;
+
+    INSERT INTO CUST_UNIT_TESTING
+    VALUES
+      (P_TEST_ID,
+       P_TEST_NAME,
+       P_VALUES,
+       P_PROGRAM_NAME,
+       P_ERROR,
+       P_TEST_DATE,
+       P_USER_ID);
+
+  END;
+
+  /*====================
+  DISPLAY TEST
+  ==========================*/
+  PROCEDURE DISPLAY_TEST(P_TEST_ID IN NUMBER) is
+    --//ROW TYPE
+    CUST_UNIT_TESTING_T CUST_UNIT_TESTING%ROWTYPE;
+
+    CURSOR TEST_C IS
+      SELECT * FROM CUST_UNIT_TESTING CUT WHERE CUT.TEST_ID = P_TEST_ID;
+
+  BEGIN
+    --// OPEN
+    OPEN TEST_C;
+
+    --// FETCH
+
+    FETCH TEST_C
+      INTO CUST_UNIT_TESTING_T;
+
+    IF TEST_C%FOUND THEN
+      DBMS_OUTPUT.put_line('Test name : ' || CUST_UNIT_TESTING_T.test_name);
+      DBMS_OUTPUT.put_line('Test Values : ' ||
+                           CUST_UNIT_TESTING_T.test_values);
+      DBMS_OUTPUT.put_line('------------------------------------------------------------------');
+      DBMS_OUTPUT.put_line('Program Sequance : ' ||
+                           CUST_UNIT_TESTING_T.program_name);
+      DBMS_OUTPUT.put_line('------------------------------------------------------------------');
+      DBMS_OUTPUT.put_line('Error Program Sequance : ' ||
+                           CUST_UNIT_TESTING_T.sub_program_name);
+      DBMS_OUTPUT.put_line('------------------------------------------------------------------');
+      DBMS_OUTPUT.put_line('User : ' || CUST_UNIT_TESTING_T.test_user_id);
+      DBMS_OUTPUT.put_line('User : ' || CUST_UNIT_TESTING_T.test_date);
+    ELSE
+      DBMS_OUTPUT.put_line('------------------------------------------------------------------');
+      DBMS_OUTPUT.put_line('Invalid Test id');
+
+    END IF;
+
+    --// CLOSE
+    CLOSE TEST_C;
+
+  END;
+
+  /*====================
+  DISPLAY TEST
+  ==========================*/
+  PROCEDURE DELETE_TEST IS
+  BEGIN
+    DELETE FROM CUST_UNIT_TESTING;
+  END;
+
+END;
