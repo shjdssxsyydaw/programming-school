@@ -1,0 +1,136 @@
+CREATE OR REPLACE FUNCTION TGC_BG_DURATION(ABSENCE_ATTENDANCE_TYPE_ID IN NUMBER,
+                                           DATE_START                 IN DATE,
+                                           DATE_END                   IN DATE,
+                                           TIME_START                 IN VARCHAR2,
+                                           TIME_END                   IN VARCHAR2,
+                                           INVALID_MSG                OUT VARCHAR2,
+                                           NUMBER_OF_DAYS             OUT NUMBER)
+
+ RETURN VARCHAR2 IS
+
+  duration   VARCHAR2(200) DEFAULT NULL;
+  TOTAL_TIME NUMBER NULL;
+  TOTAL_DAYS NUMBER NULL;
+
+BEGIN
+
+  ---COUNT DATES
+  TOTAL_DAYS := (date_end - date_start) + 1;
+
+  NUMBER_OF_DAYS := TOTAL_DAYS;
+
+  ---  LEAVE IS HALF AND SHORT  THEN
+  IF absence_attendance_type_id IN (4062,
+                                    4064,
+                                    4066,
+                                    1062,
+                                    2068,
+                                    2072,
+                                    2075,
+                                    2078,
+                                    2082,
+                                    2084,
+                                    2086,
+                                    6063,
+                                    6064,
+                                    6065,
+                                    7062,
+                                    2065,
+                                    2070,
+                                    2080,
+                                    2083,
+                                    2065,
+                                    6065) THEN
+    ---
+    IF TOTAL_DAYS > 1 THEN
+      duration    := 'FAILED';
+      invalid_msg := 'You cannot enter short/half leave for multiple dates.';
+    ELSE
+      TOTAL_TIME := ROUND((TO_DATE(TIME_END, 'HH24:MI') -
+                          TO_DATE(TIME_START, 'HH24:MI')) * 24,
+                          1);
+      duration   := TO_CHAR(TOTAL_TIME);
+    END IF;
+    ---
+
+  ELSE
+
+    TOTAL_DAYS := (date_end - date_start) + 1;
+    duration   := TO_CHAR(TOTAL_DAYS);
+  END IF;
+
+  /* ================================== SHORT LEAVE CHECK =================== */
+  IF absence_attendance_type_id IN (4062,
+                                    4064,
+                                    4066,
+                                    1062,
+                                    2068,
+                                    2072,
+                                    2075,
+                                    2078,
+                                    2082,
+                                    2084,
+                                    2086,
+                                    6063,
+                                    6064,
+                                    6065,
+                                    7062) and TOTAL_TIME > 2.5 THEN
+
+    duration    := 'FAILED';
+    invalid_msg := 'Please enter a short leave with a duration not greater than 2.5 hours.';
+  END IF;
+
+  /* ================================== HALF LEAVE CHECK =================== */
+
+  IF absence_attendance_type_id IN (2065, 2070, 2080, 2083) and
+     TOTAL_TIME NOT BETWEEN 2.5 AND 4 THEN
+    duration    := 'FAILED';
+    invalid_msg := 'Please enter a half leave with a duration between 2.5 and 4 hours.';
+  END IF;
+
+  /*======================== ABSENCE  EXISTS ON LEAVE START DATE OR END DATE============================ */
+  /*
+  DECLARE
+    FL_RESULT NUMBER;
+
+  BEGIN
+
+    SELECT COUNT(*)
+      INTO FL_RESULT
+      FROM (
+            --// APPROVED ABSENCE
+            SELECT PAA.PERSON_ID,
+                    PAA.ABSENCE_ATTENDANCE_TYPE_ID,
+                    PAA.DATE_START                 LEAVE_START_DATE,
+                    PAA.DATE_END                   LEAVE_END_DATE,
+                    PAA.ABSENCE_DAYS
+              FROM PER_ABSENCE_ATTENDANCES PAA
+             WHERE 1 = 1
+            UNION ALL
+            --// ABSENCE IN PROCESS
+            SELECT HAT.CREATOR_PERSON_ID,
+                    TO_NUMBER(HATS.INFORMATION5),
+                    TO_DATE(HATS.INFORMATION1, 'YYYY-MM-DD'),
+                    TO_DATE(HATS.INFORMATION2, 'YYYY-MM-DD'),
+                    TO_NUMBER(HATS.INFORMATION8)
+              FROM HR_API_TRANSACTIONS HAT, HR_API_TRANSACTION_STEPS HATS
+             WHERE HAT.TRANSACTION_REF_TABLE = 'PER_ABSENCE_ATTENDANCES'
+               AND HAT.TRANSACTION_GROUP = 'ABSENCE_MGMT'
+               AND HAT.TRANSACTION_IDENTIFIER = 'ABSENCES'
+               AND HAT.TRANSACTION_REF_ID IS NOT NULL
+               AND HAT.STATUS = 'Y'
+               AND HAT.TRANSACTION_ID = HATS.TRANSACTION_ID) S
+     WHERE 1 = 1
+       AND s.PERSON_ID = P_PERSON_ID
+       AND ((S.LEAVE_START_DATE BETWEEN DATE_START and DATE_END) OR
+           (S.LEAVE_END_DATE BETWEEN DATE_START and DATE_END));
+    IF FL_RESULT > 0 THEN
+      duration    := 'FAILED';
+      invalid_msg := 'leave already exists on the given date 123';
+    END IF;
+
+  END; */
+
+  RETURN duration;
+
+END;

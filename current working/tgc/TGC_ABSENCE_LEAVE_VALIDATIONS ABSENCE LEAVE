@@ -1,0 +1,136 @@
+CREATE OR REPLACE FUNCTION TGC_ABSENCE_LEAVE_VALIDATIONS(L_ASSIGNMENT_ID            IN NUMBER,
+                                                         L_START_DATE               IN varchar2,
+                                                         L_END_DATE                 IN varchar2,
+                                                         absence_attendance_type_id IN NUMBER)
+
+  /* Formatted on 04-Dec-2017 3:46:38 PM (QP5 v5.139.911.3011) */
+
+  /* IN PARAMETERS */
+ RETURN VARCHAR2
+
+ IS
+  /*LOCAL VARIABLES */
+  L_WEEKDAY VARCHAR2(200);
+  L_RESULT  VARCHAR2(10) NULL;
+
+  CURSOR DATES_CALENDAR IS
+
+    SELECT TO_CHAR(TO_DATE(L_START_DATE, 'DD-MON-YYYY') - 1 + ROWNUM, 'DY') dt
+      FROM all_objects
+     WHERE ROWNUM <= (to_date(L_END_DATE, 'dd-mon-yyyy') -
+           to_date(L_START_DATE, 'dd-mon-yyyy')) + 1;
+
+BEGIN
+
+  ----VARIABLE SCOPE DOWN TO TOP
+  -----
+
+  /* EMPLOYEE WEEKDAY AND FIND  */
+  --[   EMPLOYEE CANN'T APPLY FOR THOSE DAYS WHERE EMPLOYEE HAVE WEEKDAY
+
+  <<EMPLOYEE_WEEKDAY>>
+
+  BEGIN
+
+    SELECT HWS.WEEK_DAY
+      INTO L_WEEKDAY
+      FROM HXT_WORK_SHIFTS        HWS,
+           HXT_SHIFTS             HS,
+           HXT_ROTATION_SCHEDULES HRS,
+           HXT_ADD_ASSIGN_INFO_F  HAAI
+
+     WHERE HWS.TWS_ID = HRS.TWS_ID
+       AND HWS.SHT_ID = HS.ID
+       AND HS.NAME = 'Off Shift'
+       AND HRS.RTP_ID = HAAI.ROTATION_PLAN
+       AND SYSDATE BETWEEN HS.EFFECTIVE_START_DATE AND
+           NVL(HS.EFFECTIVE_END_DATE, SYSDATE)
+       AND SYSDATE BETWEEN HAAI.EFFECTIVE_START_DATE AND
+           HAAI.EFFECTIVE_END_DATE
+       AND HAAI.ASSIGNMENT_ID = L_ASSIGNMENT_ID;
+
+    FOR X IN DATES_CALENDAR LOOP
+
+      IF X.DT = L_WEEKDAY THEN
+        L_RESULT := 'ERI'; --- EMPLOYEE PRESENT DAY INCLUEDED
+      END IF;
+
+    END LOOP;
+
+  EXCEPTION
+    WHEN OTHERS THEN
+      NULL;
+
+  END;
+
+  /* HOLIDAYS CHECK  */
+
+  <<HOLIDAY_DATE>>
+  DECLARE
+
+    IL_HOLIDAY_COUNT NUMBER;
+
+  BEGIN
+
+    SELECT COUNT(*)
+      INTO IL_HOLIDAY_COUNT
+      FROM HXT_HOLIDAY_DAYS
+     WHERE holiday_date BETWEEN L_START_DATE AND L_END_DATE;
+
+    IF IL_HOLIDAY_COUNT > 0 THEN
+
+      L_RESULT := 'EHI'; --- EMPLOYEE HOLIDAY DAY INCLUEDED
+
+    END IF;
+
+  END;
+
+  IF absence_attendance_type_id NOT IN
+     (4062,
+      4064,
+      4066,
+      1062,
+      2068,
+      2072,
+      2075,
+      2078,
+      2082,
+      2084,
+      2086,
+      6063,
+      6064,
+      6065,
+      7062,
+      2065,
+      2070,
+      2080,
+      2083,
+      2065,
+      6065) THEN
+
+    <<OTL_TIME>>
+    DECLARE
+      OTL_EXITS NUMBER;
+    BEGIN
+      SELECT COUNT(*)
+        INTO OTL_EXITS
+        FROM HXT_DET_HOURS_WORKED_F S
+       WHERE SYSDATE BETWEEN S.EFFECTIVE_START_DATE AND
+             S.EFFECTIVE_END_DATE
+         AND S.ASSIGNMENT_ID = L_ASSIGNMENT_ID
+         AND S.TIME_IN IS NOT NULL
+         AND S.TIME_OUT IS NOT NULL
+         AND DATE_WORKED BETWEEN L_START_DATE AND L_END_DATE;
+
+      IF OTL_EXITS > 0 THEN
+
+        L_RESULT := 'EPI'; --- EMPLOYEE PRESENT DAY INCLUEDED
+      END IF;
+
+    END;
+
+  END IF;
+
+  RETURN L_RESULT;
+
+END;
