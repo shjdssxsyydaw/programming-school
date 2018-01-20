@@ -1,0 +1,76 @@
+----------SUPERVISOR HIERARCHY
+
+SELECT -- paaf.SUPERVISOR_ID
+     -- papf.person_id
+      --,papf.full_name
+      --,pp.NAME position
+    NVL(spapf.full_name,'NONE') supervisor_name
+      --,spapf.person_id supv_person_id
+     ,(ppd.SEGMENT1||' , '||ppd.SEGMENT5) Heirarchy
+      --,pp1.NAME
+FROM  per_all_people_f papf
+     ,per_positions pp
+     ,per_all_assignments_f paaf
+     ,PER_PEOPLE_X SPAPF
+     ,per_assignments_x paafa
+     ,per_positions pp1
+     ,per_position_definitions ppd
+WHERE papf.person_id = paaf.person_id
+AND   paaf.supervisor_id = spapf.person_id
+and   paaf.POSITION_ID = pp.POSITION_ID(+)
+and   SPAPF.PERSON_ID = paafa.PERSON_ID
+and   pp1.POSITION_ID = paafa.POSITION_ID
+and   ppd.POSITION_DEFINITION_ID(+) = pp1.POSITION_DEFINITION_ID
+AND   paaf.primary_flag = 'Y'
+AND   paaf.assignment_type in ('E','C')
+and   ppd.SEGMENT1 not in 'CEO'
+AND   sysdate BETWEEN papf.effective_start_date AND papf.effective_end_date
+AND   sysdate BETWEEN paaf.effective_start_date AND paaf.effective_end_date
+AND   sysdate BETWEEN paafa.effective_start_date AND paafa.effective_end_date
+and   sysdate between SPAPF.EFFECTIVE_START_DATE(+) and SPAPF.EFFECTIVE_END_DATE(+)
+START WITH papf.Employee_number = :EMPNO --nvl(:p_emp_num,papf.Employee_number)     --emp num of employee or top level supervisor
+CONNECT BY PRIOR spapf.PERSON_ID= papf.PERSON_ID
+
+
+
+
+---------------org hierarchy
+
+
+
+
+---------------------from down to top---------------------------------
+SELECT
+    LPAD(' ',10 * (LEVEL-1)) ||
+    ORG.NAME HIERARCHY,org.organization_type,
+    ORG.ORGANIZATION_ID ORGANIZATION_ID,
+    ORG.BUSINESS_GROUP_ID BUSINESS_GROUP_ID
+FROM
+    HR_ORGANIZATION_UNITS_V ORG,
+    PER_ORG_STRUCTURE_ELEMENTS OSE
+WHERE
+    1=1
+    1=1
+    AND ORG.ORGANIZATION_ID = OSE.ORGANIZATION_ID_parent
+    --and org.ORGANIZATION_TYPE = 'Region'
+    --AND OSE.ORG_STRUCTURE_VERSION_ID = 61 -- STRUCTURE VERSION
+START WITH
+    OSE.ORGANIZATION_ID_child = 206 -- PARENT ID OF TOP LEVEL ORGANIZATION
+CONNECT BY PRIOR
+    OSE.ORGANIZATION_ID_PARENT=OSE.ORGANIZATION_ID_CHILD
+ORDER SIBLINGS BY
+    ORG.LOCATION_ID,
+    OSE.ORGANIZATION_ID_CHILD
+-------------------------------------------------------------------from top to down-----------------
+  SELECT  LPAD (' ', 10 * (LEVEL - 1)) || pose.d_child_name NAME, LEVEL,
+            pose.d_parent_name, LEVEL, org.LOCATION_ID ,org.ORGANIZATION_ID
+                          FROM per_org_structure_elements_v pose,
+           hr_all_organization_units org,
+           fnd_user fu
+     WHERE pose.organization_id_child = org.organization_id
+       AND org.created_by = fu.user_id
+       --and pose.D_PARENT_NAME in ('Support Node', 'Business Node')
+--AND org.LOCATION_ID = nvl(:Loc_Id ,org.LOCATION_ID )
+START WITH pose.organization_id_parent = 81
+--START WITH organization_id = 81
+CONNECT BY PRIOR pose.organization_id_child = pose.organization_id_parent;
