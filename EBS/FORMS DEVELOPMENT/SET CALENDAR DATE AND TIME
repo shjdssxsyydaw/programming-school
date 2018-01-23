@@ -1,0 +1,11 @@
+BEGIN
+ 
+ l_to_date := app_date.field_to_date('TGC_BOM_ISSUE_HEADER.BOM_ISSU_DATE');
+ SELECT REPLACE(TO_CHAR(l_to_date,'YYYY/MM/DD HH24:MI:SS'),'00:00:00',to_char (sysdate,'HH12:MI:SS'))
+   INTO p_to_date FROM dual;
+ l_temp_date := to_date(p_to_date, 'YYYY/MM/DD HH24:MI:SS');
+ app_date.date_to_field(l_temp_date, 'TGC_BOM_ISSUE_HEADER.BOM_ISSU_DATE');
+ EXCEPTION
+   WHEN OTHERS THEN
+      null;
+END;

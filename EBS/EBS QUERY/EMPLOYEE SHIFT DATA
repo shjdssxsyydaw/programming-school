@@ -1,0 +1,45 @@
+--// EMPLOYEE SHIFT
+        <<shift>>
+        BEGIN
+
+              SELECT hs.NAME,HS.STANDARD_START,HS.STANDARD_STOP
+                INTO :shift_NAME,
+                     :SHIFT_START_TIME,
+                     :SHIFT_END_TIME
+                FROM hxt_add_assign_info_f     hasif,
+                     per_all_assignments_f     paaf,
+                     per_all_people_f          papf,
+                     hxt_rotation_plans        hrp, ---  rotation plan
+                     hxt_rotation_schedules    hrs, -- rotation plan detail
+                     hxt_weekly_work_schedules hwws, --- work plan
+                     hxt_work_shifts           hws, -- work plandetail
+                     hxt_shifts                hs, --shifts
+                     hxt_earning_policies      hep
+               WHERE 1 = 1
+
+                 AND papf.person_id = paaf.person_id
+                 AND hasif.assignment_id = paaf.assignment_id
+                 AND hep.ID = hasif.earning_policy
+                 AND hrp.ID = hasif.rotation_plan
+                 AND hrp.ID = hrs.rtp_id
+                 AND hrs.tws_id = hwws.ID
+                 AND hwws.ID = hws.tws_id
+                 AND hws.sht_id = hs.ID
+                 AND paaf.primary_flag = 'Y'
+                 AND X.ATT_DATE BETWEEN paaf.effective_start_date AND
+                     paaf.effective_end_date
+                 AND X.ATT_DATE BETWEEN papf.effective_start_date AND
+                     papf.effective_end_date
+                 AND SUBSTR(TO_CHAR(X.ATT_DATE, 'DAY'), 1, 3) = hws.week_day
+                 AND X.ATT_DATE BETWEEN hep.effective_start_date AND
+                     hep.effective_end_date
+                 AND hrs.start_date =
+                     (SELECT MAX(hrs1.start_date)
+                        FROM hxt_rotation_schedules hrs1
+                       WHERE hrs1.rtp_id = hrs.rtp_id
+                         AND TO_CHAR(hrs1.start_date, 'DD-MON-YYYY') <= TRUNC(X.ATT_DATE))
+                 AND X.ATT_DATE BETWEEN hasif.effective_start_date AND
+                     hasif.effective_end_date
+                 AND papf.person_id = :PERSON_ID;
+        EXCEPTION WHEN OTHERS THEN NULL;
+        END;
