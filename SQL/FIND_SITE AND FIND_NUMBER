@@ -1,0 +1,21 @@
+create or replace function FIND_SITE(P_DOCID VARCHAR2) return varchar2 is
+  Result varchar2(10);
+begin
+  SELECT regexP_substr(P_DOCID,'[A-Z]*')
+  INTO Result
+  FROM DUAL;
+  return(Result);
+end;
+
+
+
+================
+
+create or replace function FIND_NUMBER(P_DOCID VARCHAR2) return varchar2 is
+  Result varchar2(10);
+begin
+  SELECT regexP_substr(P_DOCID,'[0-9][A-Z]*')
+  INTO Result
+  FROM DUAL;
+  return(Result);
+end;
