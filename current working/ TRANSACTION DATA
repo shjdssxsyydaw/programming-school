@@ -1,0 +1,38 @@
+declare
+error_flag varchar2(1);
+
+cursor c1 is
+
+select person , count(*) count_person_id
+from
+(
+SELECT  (SELECT NVL(PAC.SEGMENT1,0)
+          FROM per_analysis_criteria PAC
+          WHERE PAC.ANALYSIS_CRITERIA_ID=decode(NAme,'P_ANALYSIS_CRITERIA_ID',hatv.NUMBER_VALUE)
+         ) person
+FROM   hr_api_transaction_values hatv ,hr_api_transaction_steps hats
+WHERE 1=1
+and hatv.TRANSACTION_STEP_ID=hats.TRANSACTION_STEP_ID
+and hats.TRANSACTION_ID=57005
+and decode(NAme,'P_DATE_TO',hatv.DATE_VALUE) IS  NULL
+)s
+where s.person is not null
+group by person;
+
+begin
+
+
+for x in c1 loop
+
+if x.count_person_id >1 then
+
+error_flag:='T';
+
+end if ;
+
+
+end loop;
+
+DBMS_OUTPUT.put_line(ERROR_FLAG);
+
+end;
