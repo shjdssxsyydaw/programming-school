@@ -1,0 +1,198 @@
+CREATE OR REPLACE FUNCTION TGC_GET_ALLOWED_LEAVES( P_PERSON_ID IN NUMBER,P_ABSENCE_TYPE IN VARCHAR2) RETURN VARCHAR2
+                IS
+
+              C_COUNT NUMBER;
+              VALIDATION_STATUS VARCHAR2(10) :='TRUE';
+              P_PLAN_ID NUMBER:=57167;
+                  -- FUNCTION -LOCAL VARIABLE
+                  L_LOCATION_ID         VARCHAR2(200); --
+                  L_PERSON_TYPE         VARCHAR2(200);
+                  L_EMPLOYMENT_CATEGORY VARCHAR2(200);
+                  L_SEX                 VARCHAR2(200);
+                  L_EMPLOYEE_CATEGORY   VARCHAR2(200);
+                  L_GRADE_ID            VARCHAR2(200);
+                  --///
+
+
+         BEGIN
+
+                      SELECT
+               PTYPE.PERSON_TYPE_ID,
+               PAA.EMPLOYMENT_CATEGORY,
+               PAA.LOCATION_ID,
+               PAPF.SEX,
+               PAA.EMPLOYEE_CATEGORY,
+               PAA.GRADE_ID
+
+          INTO L_PERSON_TYPE,
+               L_EMPLOYMENT_CATEGORY,
+               L_LOCATION_ID,
+               L_SEX,
+               L_EMPLOYEE_CATEGORY,
+               L_GRADE_ID
+
+          FROM PER_PERSON_TYPE_USAGES_F   PTYPE,
+               PER_ALL_PEOPLE_F           PAPF,
+               APPS.PER_ALL_ASSIGNMENTS_F PAA
+
+         WHERE PTYPE.PERSON_ID = PAPF.PERSON_ID
+           AND PAA.PERSON_ID = PAPF.PERSON_ID
+
+           AND SYSDATE BETWEEN PTYPE.EFFECTIVE_START_DATE AND
+               PTYPE.EFFECTIVE_END_DATE
+
+           AND SYSDATE BETWEEN PAPF.EFFECTIVE_START_DATE AND
+               PAPF.EFFECTIVE_END_DATE
+
+           AND SYSDATE BETWEEN PAA.EFFECTIVE_START_DATE AND
+               PAA.EFFECTIVE_END_DATE
+           AND PAPF.PERSON_ID = P_PERSON_ID;
+/*=======================================
+              VALIDATION OF LOCATION
+              ========================================*/
+--// COUNT NOT NULL RECORD
+  SELECT COUNT(QR.CHARACTER14)
+    INTO C_COUNT
+    FROM QA_RESULTS QR
+   WHERE QR.CHARACTER1 = P_ABSENCE_TYPE
+     AND QR.PLAN_ID = P_PLAN_ID;
+  DBMS_OUTPUT.PUT_LINE(C_COUNT);
+ -- FALSE : IF C_COUNT >0 x LOCATION !PERSON_LOCATION
+  IF C_COUNT >0 THEN
+        SELECT COUNT(QR.CHARACTER14)
+          INTO C_COUNT
+          FROM QA_RESULTS QR
+         WHERE QR.CHARACTER1 = P_ABSENCE_TYPE
+           AND QR.PLAN_ID = P_PLAN_ID
+           AND QR.CHARACTER14 = L_LOCATION_ID;
+        IF   C_COUNT = 0 THEN
+          VALIDATION_STATUS :='FALSE';
+         END IF ;
+  END IF ;
+
+/*=======================================
+              VALIDATION OF PERSON TYPE
+              ========================================*/
+--// COUNT NOT NULL RECORD
+  SELECT COUNT(QR.CHARACTER5)
+    INTO C_COUNT
+    FROM QA_RESULTS QR
+   WHERE QR.CHARACTER1 = P_ABSENCE_TYPE
+     AND QR.PLAN_ID = P_PLAN_ID;
+  DBMS_OUTPUT.PUT_LINE(C_COUNT);
+ -- FALSE : IF C_COUNT >0 x LOCATION !PERSON_LOCATION
+  IF C_COUNT >0 THEN
+        SELECT COUNT(QR.CHARACTER5)
+          INTO C_COUNT
+          FROM QA_RESULTS QR
+         WHERE QR.CHARACTER1 = P_ABSENCE_TYPE
+           AND QR.PLAN_ID = P_PLAN_ID
+           AND QR.CHARACTER5 = L_PERSON_TYPE;
+        IF   C_COUNT = 0 THEN
+          VALIDATION_STATUS :='FALSE';
+         END IF ;
+  END IF ;
+
+/*=======================================
+              VALIDATION OF EMPLOYEEMENT CAT
+              ========================================*/
+--// COUNT NOT NULL RECORD
+  SELECT COUNT(QR.CHARACTER9)
+    INTO C_COUNT
+    FROM QA_RESULTS QR
+   WHERE QR.CHARACTER1 = P_ABSENCE_TYPE
+     AND QR.PLAN_ID = P_PLAN_ID;
+  DBMS_OUTPUT.PUT_LINE(C_COUNT);
+ -- FALSE : IF C_COUNT >0 x LOCATION !PERSON_LOCATION
+  IF C_COUNT >0 THEN
+        SELECT COUNT(QR.CHARACTER9)
+          INTO C_COUNT
+          FROM QA_RESULTS QR
+         WHERE QR.CHARACTER1 = P_ABSENCE_TYPE
+           AND QR.PLAN_ID = P_PLAN_ID
+           AND QR.CHARACTER9 = L_EMPLOYMENT_CATEGORY;
+        IF   C_COUNT = 0 THEN
+          VALIDATION_STATUS :='FALSE';
+         END IF ;
+  END IF ;
+
+
+/*=======================================
+              VALIDATION OF L_GRADE_ID
+              ========================================*/
+--// COUNT NOT NULL RECORD
+  SELECT COUNT(CHARACTER13)
+    INTO C_COUNT
+    FROM QA_RESULTS QR
+   WHERE QR.CHARACTER1 = P_ABSENCE_TYPE
+     AND QR.PLAN_ID = P_PLAN_ID;
+  DBMS_OUTPUT.PUT_LINE(C_COUNT);
+ -- FALSE : IF C_COUNT >0 x LOCATION !PERSON_LOCATION
+  IF C_COUNT >0 THEN
+        SELECT COUNT(QR.CHARACTER13)
+          INTO C_COUNT
+          FROM QA_RESULTS QR
+         WHERE QR.CHARACTER1 = P_ABSENCE_TYPE
+           AND QR.PLAN_ID = P_PLAN_ID
+           AND QR.CHARACTER13 = L_GRADE_ID;
+        IF   C_COUNT = 0 THEN
+          VALIDATION_STATUS :='FALSE';
+         END IF ;
+  END IF ;
+
+
+/*=======================================
+              VALIDATION OF GENDER
+              ========================================*/
+--// COUNT NOT NULL RECORD
+  SELECT COUNT(CHARACTER7)
+    INTO C_COUNT
+    FROM QA_RESULTS QR
+   WHERE QR.CHARACTER1 = P_ABSENCE_TYPE
+     AND QR.PLAN_ID = P_PLAN_ID;
+  DBMS_OUTPUT.PUT_LINE(C_COUNT);
+ -- FALSE : IF C_COUNT >0 x LOCATION !PERSON_LOCATION
+  IF C_COUNT >0 THEN
+        SELECT COUNT(QR.CHARACTER7)
+          INTO C_COUNT
+          FROM QA_RESULTS QR
+         WHERE QR.CHARACTER1 = P_ABSENCE_TYPE
+           AND QR.PLAN_ID = P_PLAN_ID
+           AND QR.CHARACTER7 = L_SEX ;
+        IF   C_COUNT = 0 THEN
+          VALIDATION_STATUS :='FALSE';
+         END IF ;
+  END IF ;
+
+
+/*=======================================
+              VALIDATION OF EMPLOYEE CATEGORY
+              ========================================*/
+--// COUNT NOT NULL RECORD
+  SELECT COUNT(CHARACTER11)
+    INTO C_COUNT
+    FROM QA_RESULTS QR
+   WHERE QR.CHARACTER1 = P_ABSENCE_TYPE
+     AND QR.PLAN_ID = P_PLAN_ID;
+  DBMS_OUTPUT.PUT_LINE(C_COUNT);
+ -- FALSE : IF C_COUNT >0 x LOCATION !PERSON_LOCATION
+  IF C_COUNT >0 THEN
+        SELECT COUNT(QR.CHARACTER11)
+          INTO C_COUNT
+          FROM QA_RESULTS QR
+         WHERE QR.CHARACTER1 = P_ABSENCE_TYPE
+           AND QR.PLAN_ID = P_PLAN_ID
+           AND QR.CHARACTER11 = L_EMPLOYEE_CATEGORY  ;
+        IF   C_COUNT = 0 THEN
+          VALIDATION_STATUS :='FALSE';
+         END IF ;
+  END IF ;
+
+
+
+
+
+--============================================================================================================================================
+return VALIDATION_STATUS;
+
+END;
